@@ -18,7 +18,7 @@
     "@stripe/stripe-js": "^2.2.2",
     "jsonwebtoken": "^9.0.2",
     "bcryptjs": "^2.4.3",
-    "cookies-next": "^4.1.0"
+    "cookies-next": "^4.1.0",
     "lucide-react": "^0.294.0"
   },
   "devDependencies": {
