@@ -356,8 +356,6 @@ export default function PickupList({ gymGroups, laundryPartners = [] }) {
     </>
   )
 }
-    }
-  }
 
   const formatTime = (dateStr) => {
     if (!dateStr) return 'Unknown'
