@@ -2,6 +2,8 @@
 // OPTIMIZED: Immediate response + background processing + parallel calls
 // Version: 2.0
 
+export const runtime = 'edge'
+
 import { NextResponse } from 'next/server'
 import {
   getMemberByPhone,
