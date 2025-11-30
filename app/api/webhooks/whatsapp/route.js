@@ -1,6 +1,6 @@
 // app/api/webhooks/whatsapp/route.js
 // Complete WhatsApp automation for FLEX
-// Handles: drops, tracking, subscriptions, help, issues, photos, account management
+// FIXED: Button mappings to match TEMPLATES.md + bag confirmation logging
 
 import { NextResponse } from 'next/server'
 import {
@@ -17,6 +17,7 @@ import {
 } from '@/lib/airtable'
 import {
   sendMainMenu,
+  sendHowItWorks,
   sendDropGuide,
   sendBagConfirmed,
   sendInvalidBag,
@@ -30,6 +31,7 @@ import {
   sendCancelReason,
   sendCancelRetention,
   sendCancelConfirmed,
+  sendDiscountApplied,
   sendHelpMenu,
   sendFeedbackGreat,
   sendFeedbackBad,
@@ -66,10 +68,10 @@ export async function POST(request) {
     // Check for media (photo upload)
     const numMedia = parseInt(formData.get('NumMedia') || '0')
     const mediaUrl = numMedia > 0 ? formData.get('MediaUrl0') : null
-    const mediaType = numMedia > 0 ? formData.get('MediaContentType0') : null
 
-    // Get the action (from button or text)
-    const action = buttonPayload || bodyUpper
+    // Get the action (from button payload or text body)
+    const rawAction = buttonPayload || bodyUpper
+    const action = rawAction.toUpperCase().trim()
 
     console.log(`📱 WhatsApp from ${from}: "${action}"${mediaUrl ? ' [with media]' : ''}`)
 
@@ -80,7 +82,7 @@ export async function POST(request) {
     const member = await getMemberByPhone(from)
     
     if (!member) {
-      console.log(`Unknown number: ${from} - sending signup prompt`)
+      console.log(`❌ Unknown number: ${from} - sending signup prompt`)
       await sendNotAMember(from)
       return NextResponse.json({ success: true })
     }
@@ -93,6 +95,8 @@ export async function POST(request) {
     const state = member.fields['Conversation State'] || 'idle'
     const stripeSubId = member.fields['Stripe Subscription ID']
 
+    console.log(`✅ Member: ${firstName} | State: ${state} | Action: ${action}`)
+
     // =========================================================================
     // CHECK FOR PENDING PICKUP CONFIRMATION (Abuse Prevention Gate)
     // =========================================================================
@@ -104,7 +108,6 @@ export async function POST(request) {
     // =========================================================================
     
     if (mediaUrl && state === 'awaiting_damage_photo') {
-      // Save the damage claim with photo
       const issue = await createIssue(memberId, 'Damage Claim', `Photo uploaded: ${mediaUrl}\n\nDescription: ${body || 'No description provided'}`, mediaUrl)
       await sendDamageReceived(from, issue.fields['Ticket ID'])
       await updateMemberState(memberId, 'idle')
@@ -116,7 +119,7 @@ export async function POST(request) {
     // PICKUP CONFIRMATION FLOW
     // =========================================================================
     
-    if (action === 'CONFIRM_PICKUP' || action === 'YES_COLLECTED') {
+    if (action === 'CONFIRM_PICKUP' || action === 'YES_COLLECTED' || action === 'YES, COLLECTED') {
       if (pendingPickup) {
         await updateDropStatus(pendingPickup.id, 'Collected')
         await sendPickupConfirmedThanks(from)
@@ -129,7 +132,7 @@ export async function POST(request) {
       return NextResponse.json({ success: true })
     }
 
-    if (action === 'NOT_COLLECTED' || action === 'HAVENT_COLLECTED') {
+    if (action === 'NOT_COLLECTED' || action === 'NOT YET' || action === 'HAVENT_COLLECTED') {
       await sendMainMenu(from, firstName)
       await updateMemberState(memberId, 'idle')
       return NextResponse.json({ success: true })
@@ -139,19 +142,33 @@ export async function POST(request) {
     // GLOBAL KEYWORDS (work from any state)
     // =========================================================================
     
-    if (['MENU', 'HI', 'HELLO', 'START', 'HOME'].includes(action)) {
+    if (['MENU', 'HI', 'HELLO', 'START', 'HOME', 'MAIN MENU', 'BACK', 'BACK TO MENU'].includes(action)) {
       await updateMemberState(memberId, 'main_menu')
       await sendMainMenu(from, firstName)
       return NextResponse.json({ success: true })
     }
 
-    if (['HELP', '?'].includes(action)) {
+    if (['HELP', '?', 'NEED HELP'].includes(action)) {
       await updateMemberState(memberId, 'help_menu')
       await sendHelpMenu(from)
       return NextResponse.json({ success: true })
     }
 
-    if (['DROP', 'DROPOFF', 'DROP-OFF'].includes(action)) {
+    // =========================================================================
+    // FIX: HOW_WORKS (from template) + HOW_IT_WORKS (alternative)
+    // =========================================================================
+    
+    if (['HOW_WORKS', 'HOW_IT_WORKS', 'HOW IT WORKS', 'HOW'].includes(action)) {
+      await sendHowItWorks(from)
+      await updateMemberState(memberId, 'idle')
+      return NextResponse.json({ success: true })
+    }
+
+    // =========================================================================
+    // DROP FLOW
+    // =========================================================================
+    
+    if (['DROP', 'DROPOFF', 'DROP-OFF', 'START A DROP', 'START DROP'].includes(action)) {
       if (pendingPickup) {
         const bagNumber = pendingPickup.fields['Bag Number']
         await sendPickupBlocked(from, bagNumber, gymName)
@@ -164,32 +181,58 @@ export async function POST(request) {
     }
 
     // =========================================================================
-    // BAG NUMBER VALIDATION
+    // BAG NUMBER VALIDATION - FIXED with better logging
     // =========================================================================
     
-    if (/^B\d{3,4}$/i.test(action)) {
+    // Match B001, B0001, or just 001, 0001
+    const bagMatch = rawAction.match(/^B?\d{3,4}$/i)
+    
+    if (bagMatch) {
       if (pendingPickup) {
         const bagNumber = pendingPickup.fields['Bag Number']
         await sendPickupBlocked(from, bagNumber, gymName)
         return NextResponse.json({ success: true })
       }
       
-      const bagNumber = action.toUpperCase()
+      // Normalize bag number to B-prefix format
+      let bagNumber = rawAction.toUpperCase()
+      if (!bagNumber.startsWith('B')) {
+        bagNumber = 'B' + bagNumber.padStart(3, '0')
+      }
       
-      await createDrop(memberId, bagNumber, gymName)
-      await updateMemberState(memberId, 'idle')
+      console.log(`📦 Creating drop for bag: ${bagNumber}`)
       
-      const expectedDate = new Date()
-      expectedDate.setHours(expectedDate.getHours() + 48)
-      const formatted = expectedDate.toLocaleDateString('en-GB', {
-        weekday: 'short', day: 'numeric', month: 'short'
-      })
+      try {
+        // Create the drop in Airtable
+        const drop = await createDrop(memberId, bagNumber, gymName)
+        console.log(`✅ Drop created in Airtable: ${drop?.id || 'unknown'}`)
+        
+        await updateMemberState(memberId, 'idle')
+        
+        // Calculate expected date (48 hours from now)
+        const expectedDate = new Date()
+        expectedDate.setHours(expectedDate.getHours() + 48)
+        const formatted = expectedDate.toLocaleDateString('en-GB', {
+          weekday: 'short', day: 'numeric', month: 'short'
+        })
+        
+        // Send confirmation - THIS IS THE KEY PART
+        console.log(`📤 Sending bag confirmation for ${bagNumber}...`)
+        const result = await sendBagConfirmed(from, bagNumber, gymName, formatted)
+        console.log(`✅ Bag confirmation sent: ${result?.sid || 'sent'}`)
+        
+      } catch (error) {
+        console.error(`❌ Error in bag flow: ${error.message}`)
+        console.error(`   Stack: ${error.stack}`)
+        // Don't throw - still return success to Twilio to prevent retries
+      }
       
-      await sendBagConfirmed(from, bagNumber, gymName, formatted)
       return NextResponse.json({ success: true })
     }
 
+    // If we're awaiting bag number but input wasn't valid
     if (state === 'awaiting_bag_number') {
+      console.log(`❌ Invalid bag number format: "${rawAction}"`)
       await sendInvalidBag(from)
       return NextResponse.json({ success: true })
     }
@@ -199,7 +242,7 @@ export async function POST(request) {
     // =========================================================================
     
     // Check Drops
-    if (action === 'CHECK_DROPS' || (state === 'main_menu' && action === '1')) {
+    if (action === 'CHECK_DROPS' || action === 'CHECK DROPS' || (state === 'main_menu' && action === '1')) {
       const dropsUsed = await getMemberDropsThisMonth(memberId)
       const totalDrops = planName === 'Unlimited' ? 16 : (planName === 'Essential' ? 10 : 1)
       const remaining = Math.max(0, totalDrops - dropsUsed)
@@ -210,8 +253,11 @@ export async function POST(request) {
       return NextResponse.json({ success: true })
     }
 
-    // Track Order
-    if (action === 'TRACK_ORDER' || (state === 'main_menu' && action === '2')) {
+    // =========================================================================
+    // FIX: TRACK (from template) + TRACK_ORDER (alternative)
+    // =========================================================================
+    
+    if (['TRACK', 'TRACK_ORDER', 'TRACK ORDER'].includes(action) || (state === 'main_menu' && action === '2')) {
       const activeDrop = await getActiveDropByMember(memberId)
       
       if (activeDrop) {
@@ -227,7 +273,7 @@ export async function POST(request) {
     }
 
     // Manage Subscription
-    if (action === 'MANAGE_SUB' || (state === 'main_menu' && action === '3')) {
+    if (['MANAGE_SUB', 'MANAGE SUB', 'MANAGE SUBSCRIPTION'].includes(action) || (state === 'main_menu' && action === '3')) {
       const nextBilling = getNextBillingDate(member.fields['Signup Date'])
       const price = planName === 'Unlimited' ? 48 : (planName === 'Essential' ? 30 : 5)
       
@@ -236,8 +282,8 @@ export async function POST(request) {
       return NextResponse.json({ success: true })
     }
 
-    // My Account (NEW)
-    if (action === 'MY_ACCOUNT' || (state === 'main_menu' && action === '4')) {
+    // My Account
+    if (['MY_ACCOUNT', 'MY ACCOUNT', 'ACCOUNT'].includes(action) || (state === 'main_menu' && action === '4')) {
       const dropsUsed = await getMemberDropsThisMonth(memberId)
       const totalDrops = planName === 'Unlimited' ? 16 : (planName === 'Essential' ? 10 : 1)
       const remaining = Math.max(0, totalDrops - dropsUsed)
@@ -248,12 +294,19 @@ export async function POST(request) {
       return NextResponse.json({ success: true })
     }
 
+    // Help from main menu
+    if (state === 'main_menu' && action === '5') {
+      await updateMemberState(memberId, 'help_menu')
+      await sendHelpMenu(from)
+      return NextResponse.json({ success: true })
+    }
+
     // =========================================================================
     // SUBSCRIPTION MENU ACTIONS
     // =========================================================================
     
     // Pause Subscription
-    if (action === 'PAUSE_SUB' || (state === 'subscription_menu' && action === '1')) {
+    if (['PAUSE_SUB', 'PAUSE SUB', 'PAUSE', 'EXTEND PAUSE'].includes(action) || (state === 'subscription_menu' && action === '1')) {
       await sendPauseMenu(from)
       await updateMemberState(memberId, 'pause_menu')
       return NextResponse.json({ success: true })
@@ -276,27 +329,34 @@ export async function POST(request) {
         await updateMemberState(memberId, 'idle')
         return NextResponse.json({ success: true })
       }
+      
+      // Cancel from pause menu goes back to main
+      if (action === 'CANCEL' || action === 'MENU') {
+        await sendMainMenu(from, firstName)
+        await updateMemberState(memberId, 'main_menu')
+        return NextResponse.json({ success: true })
+      }
     }
 
     // Resume Subscription
-    if (action === 'RESUME_SUB' || (state === 'subscription_menu' && action === '2')) {
+    if (['RESUME_SUB', 'RESUME SUB', 'RESUME'].includes(action) || (state === 'subscription_menu' && action === '2')) {
       if (stripeSubId) {
         await resumeSubscription(stripeSubId)
         await sendResumeConfirmed(from)
-        await updateMemberState(memberId, 'idle')
       }
+      await updateMemberState(memberId, 'idle')
       return NextResponse.json({ success: true })
     }
 
     // Cancel Subscription
-    if (action === 'CANCEL_SUB' || (state === 'subscription_menu' && action === '3')) {
+    if (['CANCEL_SUB', 'CANCEL SUB'].includes(action) || (state === 'subscription_menu' && action === '3')) {
       await sendCancelReason(from)
       await updateMemberState(memberId, 'cancel_reason')
       return NextResponse.json({ success: true })
     }
 
-    // Change Gym (NEW)
-    if (action === 'CHANGE_GYM' || (state === 'subscription_menu' && action === '4')) {
+    // Change Gym
+    if (['CHANGE_GYM', 'CHANGE GYM'].includes(action) || (state === 'subscription_menu' && action === '4')) {
       const gyms = await getGyms()
       const gymList = gyms.filter(g => g.name !== gymName).map(g => g.name)
       await sendChangeGymMenu(from, gymName, gymList)
@@ -304,19 +364,25 @@ export async function POST(request) {
       return NextResponse.json({ success: true })
     }
 
-    // Change Plan (NEW)
-    if (action === 'CHANGE_PLAN' || (state === 'subscription_menu' && action === '5')) {
+    // Change Plan
+    if (['CHANGE_PLAN', 'CHANGE PLAN'].includes(action) || (state === 'subscription_menu' && action === '5')) {
       await sendChangePlanMenu(from, planName)
       await updateMemberState(memberId, 'change_plan')
       return NextResponse.json({ success: true })
     }
 
     // =========================================================================
-    // CHANGE GYM FLOW (NEW)
+    // CHANGE GYM FLOW
     // =========================================================================
     
     if (state === 'change_gym') {
-      // User selected a gym (number or name)
+      // Cancel goes back to menu
+      if (action === 'CANCEL' || action === 'MENU') {
+        await sendMainMenu(from, firstName)
+        await updateMemberState(memberId, 'main_menu')
+        return NextResponse.json({ success: true })
+      }
+      
       const gyms = await getGyms()
       const gymList = gyms.filter(g => g.name !== gymName)
       
@@ -326,7 +392,6 @@ export async function POST(request) {
       if (!isNaN(numChoice) && numChoice >= 1 && numChoice <= gymList.length) {
         selectedGym = gymList[numChoice - 1]
       } else {
-        // Try matching by name
         selectedGym = gyms.find(g => g.name.toUpperCase() === action || g.slug?.toUpperCase() === action)
       }
       
@@ -334,37 +399,39 @@ export async function POST(request) {
         await updateMember(memberId, { 'Gym': selectedGym.name })
         await sendGymChanged(from, selectedGym.name)
         await updateMemberState(memberId, 'idle')
-        console.log(`🏋️ Gym changed to ${selectedGym.name} for member ${memberId}`)
+        console.log(`🏋️ Gym changed to ${selectedGym.name}`)
       } else {
-        // Invalid selection, show menu again
         await sendChangeGymMenu(from, gymName, gymList.map(g => g.name))
       }
       return NextResponse.json({ success: true })
     }
 
     // =========================================================================
-    // CHANGE PLAN FLOW (NEW - Essential only for MVP)
+    // CHANGE PLAN FLOW
     // =========================================================================
     
     if (state === 'change_plan') {
-      // For MVP, only Essential is available, so any request goes to contact
+      // Cancel goes back to menu
+      if (action === 'CANCEL' || action === 'MENU') {
+        await sendMainMenu(from, firstName)
+        await updateMemberState(memberId, 'main_menu')
+        return NextResponse.json({ success: true })
+      }
+      
       if (action === '1' || action === 'ESSENTIAL') {
         if (planName !== 'Essential') {
-          // Downgrade to Essential
           if (stripeSubId) {
             await changeSubscriptionPlan(stripeSubId, 'essential')
             await updateMember(memberId, { 'Subscription Tier': 'Essential' })
             await sendPlanChanged(from, 'Essential', 30, 10)
-            console.log(`📦 Plan changed to Essential for member ${memberId}`)
+            console.log(`📦 Plan changed to Essential`)
           }
         } else {
-          // Already on Essential
           await sendMainMenu(from, firstName)
         }
         await updateMemberState(memberId, 'idle')
       } else if (action === '2' || action === 'UNLIMITED') {
-        // Unlimited not available in MVP
-        await sendPlanChanged(from, 'Unlimited', 0, 0, true) // unavailable flag
+        await sendPlanChanged(from, 'Unlimited', 0, 0, true) // unavailable
         await updateMemberState(memberId, 'idle')
       } else {
         await sendMainMenu(from, firstName)
@@ -378,19 +445,27 @@ export async function POST(request) {
     // =========================================================================
     
     if (state === 'cancel_reason') {
+      // Never Mind button goes back to menu
+      if (action === 'NEVER MIND' || action === 'MENU') {
+        await sendMainMenu(from, firstName)
+        await updateMemberState(memberId, 'main_menu')
+        return NextResponse.json({ success: true })
+      }
+      
+      // Any other response (reason selection) triggers retention offer
       await sendCancelRetention(from)
       await updateMemberState(memberId, 'cancel_retention')
       return NextResponse.json({ success: true })
     }
 
     if (state === 'cancel_retention') {
-      if (action === 'ACCEPT_OFFER' || action === '1') {
+      if (['ACCEPT_OFFER', 'ACCEPT OFFER', 'KEEP MY DISCOUNT'].includes(action) || action === '1') {
         if (stripeSubId) {
           await applyDiscount(stripeSubId, 20, 2)
         }
-        await sendMainMenu(from, firstName)
+        await sendDiscountApplied(from)
         await updateMemberState(memberId, 'idle')
-      } else if (action === 'CONFIRM_CANCEL' || action === '2') {
+      } else if (['CONFIRM_CANCEL', 'CONFIRM CANCEL', 'CANCEL ANYWAY'].includes(action) || action === '2') {
         if (stripeSubId) {
           await cancelSubscription(stripeSubId)
         }
@@ -398,121 +473,103 @@ export async function POST(request) {
         const endDate = getNextBillingDate(member.fields['Signup Date'])
         await sendCancelConfirmed(from, dropsRemaining, endDate)
         await updateMemberState(memberId, 'idle')
+      } else {
+        await sendMainMenu(from, firstName)
+        await updateMemberState(memberId, 'main_menu')
       }
       return NextResponse.json({ success: true })
     }
 
     // =========================================================================
-    // HELP MENU ACTIONS (UPDATED with Billing and Issue Types)
+    // HELP MENU ACTIONS
     // =========================================================================
     
     if (state === 'help_menu') {
       switch (action) {
-        case '1':
-        case 'WHAT_IS_DROP':
-          // Info about drops - just acknowledge
+        case '1': // What counts as a drop?
+        case '2': // How long until pickup?
+        case '3': // What can I include?
+        case '4': // How does cleaning work?
+        case '5': // Can I pause/cancel?
+        case '6': // WhatsApp commands
+        case '9': // Pricing
           await updateMemberState(memberId, 'idle')
           break
           
-        case '2':
-        case 'TURNAROUND':
-          await updateMemberState(memberId, 'idle')
-          break
-          
-        case '3':
-        case 'WHAT_ITEMS':
-          await updateMemberState(memberId, 'idle')
-          break
-          
-        case '4':
-        case 'HOW_WORKS':
-          await updateMemberState(memberId, 'idle')
-          break
-          
-        case '5':
-        case 'PAUSE_CANCEL':
-          await updateMemberState(memberId, 'idle')
-          break
-          
-        case '6':
-        case 'COMMANDS':
-          await updateMemberState(memberId, 'idle')
-          break
-          
-        case '7':
-        case 'REPORT_ISSUE':
-          // Show issue type menu
+        case '7': // Report an issue
           await sendIssueTypeMenu(from)
           await updateMemberState(memberId, 'select_issue_type')
           break
           
-        case '8':
-        case 'BILLING':
-          // Billing help (NEW)
+        case '8': // Billing
           const nextBilling = getNextBillingDate(member.fields['Signup Date'])
           const price = planName === 'Unlimited' ? 48 : (planName === 'Essential' ? 30 : 5)
           await sendBillingHelp(from, planName, price, nextBilling)
           await updateMemberState(memberId, 'idle')
           break
           
-        case '9':
-        case 'PRICING':
-          await updateMemberState(memberId, 'idle')
-          break
-          
         default:
-          await sendHelpMenu(from)
+          // MENU or CANCEL goes back
+          if (action === 'MENU' || action === 'CANCEL') {
+            await sendMainMenu(from, firstName)
+            await updateMemberState(memberId, 'main_menu')
+          } else {
+            await sendHelpMenu(from)
+          }
       }
       return NextResponse.json({ success: true })
     }
 
     // =========================================================================
-    // ISSUE TYPE SELECTION (NEW)
+    // ISSUE TYPE SELECTION
     // =========================================================================
     
     if (state === 'select_issue_type') {
+      // Cancel goes back
+      if (action === 'CANCEL' || action === 'MENU') {
+        await sendMainMenu(from, firstName)
+        await updateMemberState(memberId, 'main_menu')
+        return NextResponse.json({ success: true })
+      }
+      
       let issueType = null
       
       switch (action) {
         case '1':
         case 'LATE_DELIVERY':
+        case 'LATE DELIVERY':
           issueType = 'Late Delivery'
-          await updateMemberState(memberId, 'awaiting_issue')
           break
-          
         case '2':
         case 'MISSING_BAG':
+        case 'MISSING BAG':
           issueType = 'Missing Bag'
-          await updateMemberState(memberId, 'awaiting_issue')
           break
-          
         case '3':
         case 'WRONG_ITEMS':
+        case 'WRONG ITEMS':
           issueType = 'Wrong Items'
-          await updateMemberState(memberId, 'awaiting_issue')
           break
-          
         case '4':
         case 'DAMAGE_CLAIM':
-          // For damage, request photo
+        case 'DAMAGE CLAIM':
+        case 'DAMAGE':
           await sendDamagePhotoRequest(from)
           await updateMemberState(memberId, 'awaiting_damage_photo')
           return NextResponse.json({ success: true })
-          
         case '5':
         case 'OTHER':
           issueType = 'Other'
-          await updateMemberState(memberId, 'awaiting_issue')
           break
-          
         default:
           await sendIssueTypeMenu(from)
           return NextResponse.json({ success: true })
       }
       
       if (issueType) {
-        // Store the issue type temporarily
         await updateMember(memberId, { 'Pending Issue Type': issueType })
+        await updateMemberState(memberId, 'awaiting_issue')
+        // TODO: Send "please describe your issue" message
       }
       return NextResponse.json({ success: true })
     }
@@ -531,22 +588,23 @@ export async function POST(request) {
     }
 
     // =========================================================================
-    // FEEDBACK FLOW
+    // FEEDBACK FLOW - Fixed emoji button payloads
     // =========================================================================
     
-    if (action === 'FEEDBACK_GREAT' || action === '😊') {
+    if (['FEEDBACK_GREAT', '😊 GREAT', 'GREAT', '😊'].includes(action)) {
       const referralCode = member.fields['Referral Code'] || 'FLEX10'
       await sendFeedbackGreat(from, referralCode)
       await updateMemberState(memberId, 'idle')
       return NextResponse.json({ success: true })
     }
 
-    if (action === 'FEEDBACK_OK' || action === '😐') {
+    if (['FEEDBACK_OK', '😐 OK', 'OK', '😐'].includes(action)) {
+      await sendMainMenu(from, firstName)
       await updateMemberState(memberId, 'idle')
       return NextResponse.json({ success: true })
     }
 
-    if (action === 'FEEDBACK_BAD' || action === '😞') {
+    if (['FEEDBACK_BAD', '😞 NOT GOOD', 'NOT GOOD', 'BAD', '😞'].includes(action)) {
       await sendFeedbackBad(from)
       await updateMemberState(memberId, 'awaiting_feedback')
       return NextResponse.json({ success: true })
@@ -560,15 +618,35 @@ export async function POST(request) {
     }
 
     // =========================================================================
+    // GOT IT (from ready_pickup template)
+    // =========================================================================
+    
+    if (action === 'GOT IT' || action === 'GOT_IT') {
+      // Treat as pickup confirmation
+      if (pendingPickup) {
+        await updateDropStatus(pendingPickup.id, 'Collected')
+        await sendPickupConfirmedThanks(from)
+        await updateMemberState(memberId, 'idle')
+        console.log(`✅ Pickup confirmed via "Got It" for bag ${pendingPickup.fields['Bag Number']}`)
+      } else {
+        await sendMainMenu(from, firstName)
+        await updateMemberState(memberId, 'main_menu')
+      }
+      return NextResponse.json({ success: true })
+    }
+
+    // =========================================================================
     // DEFAULT: Show main menu
     // =========================================================================
     
+    console.log(`⚠️ Unhandled action: "${action}" in state "${state}" - showing main menu`)
     await sendMainMenu(from, firstName)
     await updateMemberState(memberId, 'main_menu')
     return NextResponse.json({ success: true })
 
   } catch (error) {
-    console.error('WhatsApp webhook error:', error)
+    console.error('❌ WhatsApp webhook error:', error.message)
+    console.error('   Stack:', error.stack)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
