@@ -1,8 +1,6 @@
 // app/api/webhooks/whatsapp/route.js
-// OPTIMIZED: Immediate response + background processing + parallel calls
-// Version: 2.0
-
-export const runtime = 'edge'
+// Updated to match confirmed Airtable schema - December 2024
+// Optimized with parallel calls and proper error handling
 
 import { NextResponse } from 'next/server'
 import {
@@ -16,7 +14,10 @@ import {
   updateDropStatus,
   createIssue,
   getGyms,
-  getGymName, // NEW: Helper to resolve gym name from linked record
+  getGymByName,
+  getPlanByName,
+  extractMemberContext,
+  createAuditLog,
 } from '@/lib/airtable'
 import {
   sendMainMenu,
@@ -61,14 +62,13 @@ import {
 } from '@/lib/stripe-helpers'
 
 // ============================================================================
-// MAIN WEBHOOK HANDLER - Responds immediately, processes in background
+// MAIN WEBHOOK HANDLER
 // ============================================================================
 
 export async function POST(request) {
   const startTime = Date.now()
   
   try {
-    // Parse form data
     const formData = await request.formData()
     
     const messageData = {
@@ -77,57 +77,34 @@ export async function POST(request) {
       buttonPayload: formData.get('ButtonPayload') || '',
       numMedia: parseInt(formData.get('NumMedia') || '0'),
       mediaUrl: formData.get('MediaUrl0') || null,
-      mediaType: formData.get('MediaContentType0') || null,
     }
 
     console.log(`📱 Webhook received in ${Date.now() - startTime}ms`)
 
-    // =========================================================================
-    // OPTION 1: Use waitUntil (Vercel Edge/Serverless)
-    // This lets us return immediately while processing continues
-    // =========================================================================
-    
-    // If using Vercel with waitUntil support:
-    // const { waitUntil } = await import('@vercel/functions')
-    // waitUntil(processMessage(messageData))
-    // return new Response('OK', { status: 200 })
-
-    // =========================================================================
-    // OPTION 2: Fire-and-forget with catch (works everywhere)
-    // Slight risk: if function terminates early, message may not send
-    // =========================================================================
-    
-    // Process synchronously but optimized
     await processMessage(messageData)
     
-    console.log(`✅ Total webhook time: ${Date.now() - startTime}ms`)
+    console.log(`✅ Total time: ${Date.now() - startTime}ms`)
     return new Response('OK', { status: 200 })
 
   } catch (error) {
     console.error('❌ Webhook error:', error.message)
-    // Always return 200 to prevent Twilio retries
     return new Response('OK', { status: 200 })
   }
 }
 
 // ============================================================================
-// MESSAGE PROCESSOR - All the business logic
+// MESSAGE PROCESSOR
 // ============================================================================
 
 async function processMessage(data) {
-  const { from, body, buttonPayload, numMedia, mediaUrl } = data
-  const processStart = Date.now()
-
-  // Normalize action
+  const { from, body, buttonPayload, mediaUrl } = data
+  
   const rawAction = buttonPayload || body
   const action = normalizeAction(rawAction)
 
   console.log(`🔄 Processing: "${rawAction}" → "${action}"`)
 
-  // =========================================================================
-  // STEP 1: Get member (required for everything)
-  // =========================================================================
-  
+  // Get member
   const member = await getMemberByPhone(from)
   
   if (!member) {
@@ -136,55 +113,17 @@ async function processMessage(data) {
     return
   }
 
-  // Extract member data once
+  // Extract context using helper
   const ctx = extractMemberContext(member)
   
-  console.log(`👤 ${ctx.firstName} | State: ${ctx.state} | ${Date.now() - processStart}ms`)
+  console.log(`👤 ${ctx.firstName} | State: ${ctx.state} | Gym: ${ctx.gymName}`)
 
-  // =========================================================================
-  // STEP 2: Route to handler (optimized routing)
-  // =========================================================================
-  
+  // Route message
   await routeMessage(from, action, rawAction, ctx, mediaUrl)
 }
 
 // ============================================================================
-// CONTEXT EXTRACTION - Get all member data in one place
-// ============================================================================
-
-function extractMemberContext(member) {
-  const fields = member.fields
-  
-  // Handle gym field (might be linked record or text)
-  let gymName = 'your gym'
-  const gymField = fields['Gym']
-  if (gymField) {
-    if (Array.isArray(gymField)) {
-      // It's a linked record - we'll need to resolve it
-      // For now, check if there's a lookup field
-      gymName = fields['Gym Name'] || fields['Gym (from Gyms)'] || 'your gym'
-    } else {
-      gymName = gymField
-    }
-  }
-
-  return {
-    memberId: member.id,
-    firstName: fields['First Name'] || 'there',
-    gymName,
-    gymRecordId: Array.isArray(fields['Gym']) ? fields['Gym'][0] : null,
-    planName: fields['Subscription Tier'] || 'Essential',
-    email: fields['Email'] || '',
-    state: fields['Conversation State'] || 'idle',
-    stripeSubId: fields['Stripe Subscription ID'],
-    signupDate: fields['Signup Date'],
-    referralCode: fields['Referral Code'] || 'FLEX10',
-    pendingIssueType: fields['Pending Issue Type'],
-  }
-}
-
-// ============================================================================
-// ACTION NORMALIZER - Map button text to action codes
+// ACTION NORMALIZER
 // ============================================================================
 
 function normalizeAction(raw) {
@@ -192,9 +131,8 @@ function normalizeAction(raw) {
   
   const upper = raw.toUpperCase().trim()
   
-  // Direct mappings from template button payloads
   const map = {
-    // Template payloads → normalized actions
+    // Template button payloads
     'HOW_WORKS': 'HOW_IT_WORKS',
     'HOW IT WORKS': 'HOW_IT_WORKS',
     'TRACK': 'TRACK_ORDER',
@@ -215,7 +153,6 @@ function normalizeAction(raw) {
     '😞 NOT GOOD': 'FEEDBACK_BAD',
     'NOT GOOD': 'FEEDBACK_BAD',
     'ACCEPT OFFER': 'ACCEPT_OFFER',
-    'KEEP MY DISCOUNT': 'ACCEPT_OFFER',
     'CANCEL ANYWAY': 'CONFIRM_CANCEL',
     'NEVER MIND': 'MENU',
     'EXTEND PAUSE': 'PAUSE_SUB',
@@ -229,25 +166,18 @@ function normalizeAction(raw) {
 }
 
 // ============================================================================
-// MESSAGE ROUTER - Optimized routing with early returns
+// MESSAGE ROUTER
 // ============================================================================
 
 async function routeMessage(from, action, rawAction, ctx, mediaUrl) {
-  const { memberId, firstName, gymName, state, stripeSubId, planName } = ctx
+  const { memberId, firstName, gymName, gymRecordId, state, stripeSubId, planName } = ctx
 
-  // =========================================================================
-  // PHOTO HANDLING (check first, before anything else)
-  // =========================================================================
-  
+  // Photo handling
   if (mediaUrl && state === 'awaiting_damage_photo') {
     return handleDamagePhoto(from, memberId, mediaUrl, rawAction)
   }
 
-  // =========================================================================
-  // GLOBAL ACTIONS (work from any state)
-  // =========================================================================
-  
-  // Menu/Home
+  // Global actions
   if (['MENU', 'HI', 'HELLO', 'START', 'HOME'].includes(action)) {
     return Promise.all([
       updateMemberState(memberId, 'main_menu'),
@@ -255,7 +185,6 @@ async function routeMessage(from, action, rawAction, ctx, mediaUrl) {
     ])
   }
 
-  // Help
   if (['HELP', '?'].includes(action)) {
     return Promise.all([
       updateMemberState(memberId, 'help_menu'),
@@ -263,7 +192,6 @@ async function routeMessage(from, action, rawAction, ctx, mediaUrl) {
     ])
   }
 
-  // How It Works
   if (action === 'HOW_IT_WORKS') {
     return Promise.all([
       updateMemberState(memberId, 'idle'),
@@ -271,10 +199,7 @@ async function routeMessage(from, action, rawAction, ctx, mediaUrl) {
     ])
   }
 
-  // =========================================================================
-  // PICKUP CONFIRMATION (abuse prevention gate)
-  // =========================================================================
-  
+  // Pickup confirmation
   if (action === 'CONFIRM_PICKUP') {
     return handlePickupConfirm(from, memberId, firstName)
   }
@@ -286,67 +211,47 @@ async function routeMessage(from, action, rawAction, ctx, mediaUrl) {
     ])
   }
 
-  // =========================================================================
-  // DROP FLOW
-  // =========================================================================
-  
+  // Drop flow
   if (action === 'DROP') {
     return handleStartDrop(from, memberId, gymName)
   }
 
-  // Bag number submitted
+  // Bag number
   if (/^B?\d{3,4}$/i.test(rawAction)) {
-    return handleBagNumber(from, memberId, rawAction, gymName)
+    return handleBagNumber(from, memberId, rawAction, gymName, gymRecordId)
   }
 
-  // Invalid bag number while awaiting
   if (state === 'awaiting_bag_number') {
     return sendInvalidBag(from)
   }
 
-  // =========================================================================
-  // STATE-BASED ROUTING
-  // =========================================================================
-  
+  // State-based routing
   switch (state) {
     case 'main_menu':
       return handleMainMenu(from, action, ctx)
-    
     case 'subscription_menu':
       return handleSubscriptionMenu(from, action, ctx)
-    
     case 'pause_menu':
       return handlePauseMenu(from, action, ctx)
-    
     case 'cancel_reason':
       return handleCancelReason(from, action, ctx)
-    
     case 'cancel_retention':
       return handleCancelRetention(from, action, ctx)
-    
     case 'change_gym':
       return handleChangeGym(from, action, ctx)
-    
     case 'change_plan':
       return handleChangePlan(from, action, ctx)
-    
     case 'help_menu':
       return handleHelpMenu(from, action, ctx)
-    
     case 'select_issue_type':
       return handleIssueType(from, action, ctx)
-    
     case 'awaiting_issue':
       return handleIssueDescription(from, rawAction, ctx)
-    
     case 'awaiting_feedback':
       return handleFeedbackDescription(from, rawAction, ctx)
   }
 
-  // =========================================================================
-  // FEEDBACK BUTTONS (can come from any state after pickup)
-  // =========================================================================
-  
+  // Feedback buttons
   if (action === 'FEEDBACK_GREAT') {
     return Promise.all([
       updateMemberState(memberId, 'idle'),
@@ -368,10 +273,7 @@ async function routeMessage(from, action, rawAction, ctx, mediaUrl) {
     ])
   }
 
-  // =========================================================================
-  // DIRECT ACTIONS (can come from buttons regardless of state)
-  // =========================================================================
-  
+  // Direct actions
   if (action === 'TRACK_ORDER') {
     return handleTrackOrder(from, memberId, gymName)
   }
@@ -384,10 +286,7 @@ async function routeMessage(from, action, rawAction, ctx, mediaUrl) {
     return handleCheckDrops(from, memberId, ctx)
   }
 
-  // =========================================================================
-  // DEFAULT: Show main menu
-  // =========================================================================
-  
+  // Default
   console.log(`⚠️ Unhandled: "${action}" in state "${state}"`)
   return Promise.all([
     updateMemberState(memberId, 'main_menu'),
@@ -396,7 +295,7 @@ async function routeMessage(from, action, rawAction, ctx, mediaUrl) {
 }
 
 // ============================================================================
-// HANDLERS - Each handler is optimized with parallel calls where possible
+// HANDLERS
 // ============================================================================
 
 async function handlePickupConfirm(from, memberId, firstName) {
@@ -407,7 +306,8 @@ async function handlePickupConfirm(from, memberId, firstName) {
     return Promise.all([
       updateDropStatus(pendingPickup.id, 'Collected'),
       updateMemberState(memberId, 'idle'),
-      sendPickupConfirmedThanks(from)
+      sendPickupConfirmedThanks(from),
+      createAuditLog('Status Changed', 'WhatsApp', 'Drop', pendingPickup.id, 'Collected')
     ])
   }
   
@@ -421,8 +321,7 @@ async function handleStartDrop(from, memberId, gymName) {
   const pendingPickup = await getDropAwaitingPickupConfirm(memberId)
   
   if (pendingPickup) {
-    const bagNumber = pendingPickup.fields['Bag Number']
-    return sendPickupBlocked(from, bagNumber, gymName)
+    return sendPickupBlocked(from, pendingPickup.fields['Bag Number'], gymName)
   }
   
   return Promise.all([
@@ -431,8 +330,7 @@ async function handleStartDrop(from, memberId, gymName) {
   ])
 }
 
-async function handleBagNumber(from, memberId, rawAction, gymName) {
-  // Check for pending pickup first
+async function handleBagNumber(from, memberId, rawAction, gymName, gymRecordId) {
   const pendingPickup = await getDropAwaitingPickupConfirm(memberId)
   
   if (pendingPickup) {
@@ -445,16 +343,15 @@ async function handleBagNumber(from, memberId, rawAction, gymName) {
     bagNumber = 'B' + bagNumber.padStart(3, '0')
   }
   
-  console.log(`📦 Creating drop: ${bagNumber}`)
+  console.log(`📦 Creating drop: ${bagNumber} at ${gymName}`)
   
   try {
-    // Create drop and update state in parallel
     const [drop] = await Promise.all([
-      createDrop(memberId, bagNumber, gymName),
+      createDrop(memberId, bagNumber, gymRecordId),
       updateMemberState(memberId, 'idle')
     ])
     
-    // Calculate expected date
+    // Calculate expected date (48 hours)
     const expectedDate = new Date()
     expectedDate.setHours(expectedDate.getHours() + 48)
     const formatted = expectedDate.toLocaleDateString('en-GB', {
@@ -464,56 +361,52 @@ async function handleBagNumber(from, memberId, rawAction, gymName) {
     console.log(`✅ Drop created: ${drop?.id}`)
     await sendBagConfirmed(from, bagNumber, gymName, formatted)
     
+    // Audit log
+    await createAuditLog('Drop Created', 'WhatsApp', 'Drop', drop?.id || 'unknown', bagNumber)
+    
   } catch (error) {
     console.error(`❌ Drop error: ${error.message}`)
-    // Still mark as idle to prevent stuck state
     await updateMemberState(memberId, 'idle')
   }
 }
 
 async function handleMainMenu(from, action, ctx) {
-  const { memberId, firstName, gymName, planName } = ctx
+  const { memberId, firstName } = ctx
   
   switch (action) {
-    case '1': // Check drops
+    case '1':
     case 'CHECK_DROPS':
       return handleCheckDrops(from, memberId, ctx)
-    
-    case '2': // Track order
+    case '2':
     case 'TRACK_ORDER':
-      return handleTrackOrder(from, memberId, gymName)
-    
-    case '3': // Manage subscription
+      return handleTrackOrder(from, memberId, ctx.gymName)
+    case '3':
     case 'MANAGE_SUB':
       return handleManageSub(from, memberId, ctx)
-    
-    case '4': // My account
+    case '4':
     case 'MY_ACCOUNT':
       return handleMyAccount(from, memberId, ctx)
-    
-    case '5': // Help
+    case '5':
     case 'HELP':
       return Promise.all([
         updateMemberState(memberId, 'help_menu'),
         sendHelpMenu(from)
       ])
-    
     default:
       return sendMainMenu(from, firstName)
   }
 }
 
 async function handleCheckDrops(from, memberId, ctx) {
-  const { planName, signupDate } = ctx
+  const { planName, signupDate, dropsAllowed } = ctx
   
   const dropsUsed = await getMemberDropsThisMonth(memberId)
-  const totalDrops = planName === 'Unlimited' ? 16 : (planName === 'Essential' ? 10 : 1)
-  const remaining = Math.max(0, totalDrops - dropsUsed)
+  const remaining = Math.max(0, dropsAllowed - dropsUsed)
   const renewDate = getNextBillingDate(signupDate)
   
   return Promise.all([
     updateMemberState(memberId, 'idle'),
-    sendCheckDrops(from, planName, dropsUsed, totalDrops, remaining, renewDate)
+    sendCheckDrops(from, planName, dropsUsed, dropsAllowed, remaining, renewDate)
   ])
 }
 
@@ -523,10 +416,13 @@ async function handleTrackOrder(from, memberId, gymName) {
   await updateMemberState(memberId, 'idle')
   
   if (activeDrop) {
-    const bagNumber = activeDrop.fields['Bag Number']
-    const status = activeDrop.fields['Status']
-    const expectedDate = activeDrop.fields['Ready Date'] || 'within 48 hours'
-    return sendTrackActive(from, bagNumber, status, gymName, expectedDate)
+    return sendTrackActive(
+      from,
+      activeDrop.fields['Bag Number'],
+      activeDrop.fields['Status'],
+      gymName,
+      activeDrop.fields['Ready Date'] || 'within 48 hours'
+    )
   }
   
   return sendTrackNone(from)
@@ -535,7 +431,10 @@ async function handleTrackOrder(from, memberId, gymName) {
 async function handleManageSub(from, memberId, ctx) {
   const { planName, signupDate } = ctx
   const nextBilling = getNextBillingDate(signupDate)
-  const price = planName === 'Unlimited' ? 48 : (planName === 'Essential' ? 30 : 5)
+  
+  // Get price from plan name
+  const plan = await getPlanByName(planName)
+  const price = plan?.price || (planName === 'Unlimited' ? 48 : planName === 'Essential' ? 30 : 5)
   
   return Promise.all([
     updateMemberState(memberId, 'subscription_menu'),
@@ -544,16 +443,15 @@ async function handleManageSub(from, memberId, ctx) {
 }
 
 async function handleMyAccount(from, memberId, ctx) {
-  const { firstName, email, gymName, planName, signupDate } = ctx
+  const { firstName, email, gymName, planName, signupDate, dropsAllowed } = ctx
   
   const dropsUsed = await getMemberDropsThisMonth(memberId)
-  const totalDrops = planName === 'Unlimited' ? 16 : (planName === 'Essential' ? 10 : 1)
-  const remaining = Math.max(0, totalDrops - dropsUsed)
+  const remaining = Math.max(0, dropsAllowed - dropsUsed)
   const nextBilling = getNextBillingDate(signupDate)
   
   return Promise.all([
     updateMemberState(memberId, 'idle'),
-    sendMyAccount(from, firstName, email, gymName, planName, remaining, totalDrops, nextBilling)
+    sendMyAccount(from, firstName, email, gymName, planName, remaining, dropsAllowed, nextBilling)
   ])
 }
 
@@ -561,31 +459,29 @@ async function handleSubscriptionMenu(from, action, ctx) {
   const { memberId, firstName, gymName, planName, stripeSubId } = ctx
   
   switch (action) {
-    case '1': // Pause
+    case '1':
     case 'PAUSE_SUB':
       return Promise.all([
         updateMemberState(memberId, 'pause_menu'),
         sendPauseMenu(from)
       ])
     
-    case '2': // Resume
+    case '2':
     case 'RESUME_SUB':
-      if (stripeSubId) {
-        await resumeSubscription(stripeSubId)
-      }
+      if (stripeSubId) await resumeSubscription(stripeSubId)
       return Promise.all([
         updateMemberState(memberId, 'idle'),
         sendResumeConfirmed(from)
       ])
     
-    case '3': // Cancel
+    case '3':
     case 'CANCEL_SUB':
       return Promise.all([
         updateMemberState(memberId, 'cancel_reason'),
         sendCancelReason(from)
       ])
     
-    case '4': // Change gym
+    case '4':
     case 'CHANGE_GYM':
       const gyms = await getGyms()
       const gymList = gyms.filter(g => g.name !== gymName).map(g => g.name)
@@ -594,7 +490,7 @@ async function handleSubscriptionMenu(from, action, ctx) {
         sendChangeGymMenu(from, gymName, gymList)
       ])
     
-    case '5': // Change plan
+    case '5':
     case 'CHANGE_PLAN':
       return Promise.all([
         updateMemberState(memberId, 'change_plan'),
@@ -627,7 +523,6 @@ async function handlePauseMenu(from, action, ctx) {
     ])
   }
   
-  // Cancel or invalid - back to menu
   return Promise.all([
     updateMemberState(memberId, 'main_menu'),
     sendMainMenu(from, firstName)
@@ -644,7 +539,6 @@ async function handleCancelReason(from, action, ctx) {
     ])
   }
   
-  // Any reason triggers retention
   return Promise.all([
     updateMemberState(memberId, 'cancel_retention'),
     sendCancelRetention(from)
@@ -652,12 +546,10 @@ async function handleCancelReason(from, action, ctx) {
 }
 
 async function handleCancelRetention(from, action, ctx) {
-  const { memberId, firstName, stripeSubId, signupDate } = ctx
+  const { memberId, firstName, stripeSubId, signupDate, dropsAllowed } = ctx
   
   if (action === 'ACCEPT_OFFER' || action === '1') {
-    if (stripeSubId) {
-      await applyDiscount(stripeSubId, 20, 2)
-    }
+    if (stripeSubId) await applyDiscount(stripeSubId, 20, 2)
     return Promise.all([
       updateMemberState(memberId, 'idle'),
       sendDiscountApplied(from)
@@ -665,14 +557,13 @@ async function handleCancelRetention(from, action, ctx) {
   }
   
   if (action === 'CONFIRM_CANCEL' || action === '2') {
-    if (stripeSubId) {
-      await cancelSubscription(stripeSubId)
-    }
-    const dropsRemaining = await getMemberDropsThisMonth(ctx.memberId)
+    if (stripeSubId) await cancelSubscription(stripeSubId)
+    const dropsUsed = await getMemberDropsThisMonth(ctx.memberId)
+    const remaining = Math.max(0, dropsAllowed - dropsUsed)
     const endDate = getNextBillingDate(signupDate)
     return Promise.all([
       updateMemberState(memberId, 'idle'),
-      sendCancelConfirmed(from, dropsRemaining, endDate)
+      sendCancelConfirmed(from, remaining, endDate)
     ])
   }
   
@@ -707,7 +598,7 @@ async function handleChangeGym(from, action, ctx) {
   if (selectedGym) {
     console.log(`🏋️ Gym → ${selectedGym.name}`)
     return Promise.all([
-      updateMember(memberId, { 'Gym': selectedGym.name }),
+      updateMember(memberId, { 'Gym': [selectedGym.id] }),
       updateMemberState(memberId, 'idle'),
       sendGymChanged(from, selectedGym.name)
     ])
@@ -755,18 +646,18 @@ async function handleHelpMenu(from, action, ctx) {
   
   switch (action) {
     case '1': case '2': case '3': case '4': case '5': case '6': case '9':
-      // Informational - template handles content
       return updateMemberState(memberId, 'idle')
     
-    case '7': // Report issue
+    case '7':
       return Promise.all([
         updateMemberState(memberId, 'select_issue_type'),
         sendIssueTypeMenu(from)
       ])
     
-    case '8': // Billing
+    case '8':
+      const plan = await getPlanByName(planName)
+      const price = plan?.price || 30
       const nextBilling = getNextBillingDate(signupDate)
-      const price = planName === 'Unlimited' ? 48 : (planName === 'Essential' ? 30 : 5)
       return Promise.all([
         updateMemberState(memberId, 'idle'),
         sendBillingHelp(from, planName, price, nextBilling)
@@ -801,7 +692,6 @@ async function handleIssueType(from, action, ctx) {
   }
   
   if (action === '4') {
-    // Damage - request photo
     return Promise.all([
       updateMemberState(memberId, 'awaiting_damage_photo'),
       sendDamagePhotoRequest(from)
@@ -814,7 +704,6 @@ async function handleIssueType(from, action, ctx) {
       updateMember(memberId, { 'Pending Issue Type': issueType }),
       updateMemberState(memberId, 'awaiting_issue')
     ])
-    // TODO: Send "please describe" prompt
   }
   
   return sendIssueTypeMenu(from)
