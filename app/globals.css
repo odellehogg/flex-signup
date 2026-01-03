@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --flex-green: #10B981;
+  --flex-green-dark: #059669;
+  --flex-navy: #1E3A5F;
+  --flex-light: #F0FDF4;
+}
+
+body {
+  @apply bg-white text-gray-900;
+}
+
+/* Custom button styles */
+.btn-primary {
+  @apply bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200;
+}
+
+.btn-secondary {
+  @apply bg-white hover:bg-gray-50 text-emerald-600 font-semibold py-3 px-6 rounded-lg border-2 border-emerald-500 transition-colors duration-200;
+}
+
+.btn-outline {
+  @apply bg-transparent hover:bg-emerald-50 text-emerald-600 font-semibold py-2 px-4 rounded-lg border border-emerald-500 transition-colors duration-200;
+}
+
+/* Card styles */
+.card {
+  @apply bg-white rounded-xl shadow-lg p-6;
+}
+
+.card-hover {
+  @apply card hover:shadow-xl transition-shadow duration-200;
+}
+
+/* Status badges */
+.badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.badge-active {
+  @apply badge bg-emerald-100 text-emerald-800;
+}
+
+.badge-paused {
+  @apply badge bg-yellow-100 text-yellow-800;
+}
+
+.badge-cancelled {
+  @apply badge bg-red-100 text-red-800;
+}
+
+.badge-dropped {
+  @apply badge bg-blue-100 text-blue-800;
+}
+
+.badge-transit {
+  @apply badge bg-purple-100 text-purple-800;
+}
+
+.badge-laundry {
+  @apply badge bg-indigo-100 text-indigo-800;
+}
+
+.badge-ready {
+  @apply badge bg-emerald-100 text-emerald-800;
+}
+
+.badge-collected {
+  @apply badge bg-gray-100 text-gray-800;
+}
+
+/* Form inputs */
+.input {
+  @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors;
+}
+
+.input-error {
+  @apply input border-red-500 focus:ring-red-500 focus:border-red-500;
+}
+
+/* Section spacing */
+.section {
+  @apply py-16 md:py-24;
+}
+
+.container-page {
+  @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+/* Loading spinner */
+.spinner {
+  @apply animate-spin rounded-full h-5 w-5 border-2 border-emerald-500 border-t-transparent;
+}
