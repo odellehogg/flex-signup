@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
+
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { getMemberById, updateMember } from '@/lib/airtable';
 import { resumeSubscription } from '@/lib/stripe-helpers';
 import { logSubscriptionChange } from '@/lib/audit';
+
+
+export const dynamic = 'force-dynamic';
 
 export async function POST() {
   try {

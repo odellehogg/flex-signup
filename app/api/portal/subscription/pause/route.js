@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
+
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { getMemberById, updateMember } from '@/lib/airtable';
 import { pauseSubscription } from '@/lib/stripe-helpers';
 import { logSubscriptionChange } from '@/lib/audit';
 import { sendPauseConfirmationEmail } from '@/lib/email';
+
+
+export const dynamic = 'force-dynamic';
 
 export async function POST() {
   try {

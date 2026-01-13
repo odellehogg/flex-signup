@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
+
 import { normalizePhone } from '@/lib/airtable';
 import { verifyLoginCode, createAuthCookie } from '@/lib/auth';
 import { cookies } from 'next/headers';
+
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {

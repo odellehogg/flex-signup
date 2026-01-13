@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
+
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { getMemberById } from '@/lib/airtable';
 import { createPortalSession } from '@/lib/stripe-helpers';
+
+
+export const dynamic = 'force-dynamic';
 
 export async function POST() {
   try {

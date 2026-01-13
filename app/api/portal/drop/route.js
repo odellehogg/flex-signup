@@ -14,23 +14,36 @@ import {
   getGymById,
 } from '@/lib/airtable';
 import { sendDropConfirmed } from '@/lib/whatsapp';
-import { verifySession } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth';
+
+
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(request) {
   try {
-    // Verify session
-    const cookieStore = cookies();
-    const sessionToken = cookieStore.get('flex_session')?.value;
+    // Verify session using same pattern as /api/portal/me
+    const cookieStore = await cookies();
+    const token = cookieStore.get('flex_auth')?.value;
     
-    if (!sessionToken) {
+    if (!token) {
       return NextResponse.json(
         { success: false, error: 'Not authenticated' },
         { status: 401 }
       );
     }
 
-    const session = await verifySession(sessionToken);
-    if (!session) {
+    let payload;
+    try {
+      payload = verifyToken(token);
+    } catch {
+      return NextResponse.json(
+        { success: false, error: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
+    if (!payload) {
       return NextResponse.json(
         { success: false, error: 'Invalid session' },
         { status: 401 }
@@ -38,7 +51,7 @@ export async function POST(request) {
     }
 
     // Get member
-    const member = await getMemberById(session.memberId);
+    const member = await getMemberById(payload.memberId);
     if (!member) {
       return NextResponse.json(
         { success: false, error: 'Member not found' },
@@ -118,7 +131,7 @@ export async function POST(request) {
     });
 
     // Send WhatsApp confirmation
-    const phone = member.fields['Phone'];
+    const phone = member.fields['Phone'] || member.fields['Phone Number'];
     if (phone) {
       try {
         await sendDropConfirmed(phone, {

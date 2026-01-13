@@ -4,6 +4,11 @@ import { verifyToken } from '@/lib/auth';
 import { getMemberById, getActiveDropsByMember } from '@/lib/airtable';
 import { getSubscription } from '@/lib/stripe-helpers';
 
+// Force dynamic rendering (uses cookies)
+
+
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const cookieStore = await cookies();
