@@ -22,9 +22,6 @@ export async function GET() {
   return NextResponse.redirect(new URL('/portal/login', process.env.NEXT_PUBLIC_URL || 'https://flexlaundry.co.uk'));
 }
 
-
-export const dynamic = 'force-dynamic';
-
 export async function POST() {
   const cookieStore = await cookies();
   const logoutCookie = createLogoutCookie();
