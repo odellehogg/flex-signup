@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
-import { getAllGyms, getGymBySlug } from '@/lib/airtable';
+import { getAllGyms, getGymByCode } from '@/lib/airtable';
 
 export async function GET(request) {
   try {
@@ -9,8 +9,7 @@ export async function GET(request) {
     const code = searchParams.get('code');
 
     if (code) {
-      // FIX: Airtable field is 'Slug' not 'Code'
-      const gym = await getGymBySlug(code);
+      const gym = await getGymByCode(code);
       if (!gym) return NextResponse.json({ error: 'Gym not found' }, { status: 404 });
       return NextResponse.json({
         gym: {
@@ -26,16 +25,13 @@ export async function GET(request) {
 
     const gyms = await getAllGyms();
     return NextResponse.json({
-      gyms: gyms
-        // FIX: Airtable uses 'Is Active' checkbox not 'Status' text field
-        .filter(g => g.fields['Is Active'] === true)
-        .map(g => ({
-          id: g.id
-          code: g.fields['Slug'],
-          name: g.fields['Name'],
-          address: g.fields['Address'],
-          postcode: g.fields['Postcode'],
-        })),
+      gyms: gyms.map(g => ({
+        id: g.id,
+        code: g.fields['Slug'],
+        name: g.fields['Name'],
+        address: g.fields['Address'],
+        postcode: g.fields['Postcode'],
+      })),
     });
   } catch (err) {
     console.error('[Gyms API] Error:', err);
