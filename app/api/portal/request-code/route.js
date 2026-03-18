@@ -7,6 +7,7 @@
 import { NextResponse } from 'next/server';
 import { getMemberByPhone, normalizePhone } from '@/lib/airtable';
 import { requestLoginCode } from '@/lib/auth';
+import { loginRateLimit } from '@/lib/rate-limit';
 
 export async function POST(request) {
   try {
@@ -14,6 +15,13 @@ export async function POST(request) {
 
     if (!phone) {
       return NextResponse.json({ error: 'Phone number required' }, { status: 400 });
+    }
+
+    // Rate limit by IP
+    const ip = request.headers.get('x-forwarded-for') || 'unknown';
+    const { limited } = loginRateLimit(`login:${ip}`);
+    if (limited) {
+      return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
     }
 
     const normalizedPhone = normalizePhone(phone);

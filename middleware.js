@@ -14,16 +14,14 @@ export function middleware(request) {
     }
   }
 
-  // Protect ops routes with basic auth check
-  if (pathname.startsWith('/ops')) {
-    // In production, implement proper ops authentication
-    // For now, allow access (implement auth in production)
+  // Protect ops routes with auth check
+  if (pathname.startsWith('/ops') && !pathname.startsWith('/ops/login')) {
     const opsAuth = request.cookies.get('ops_auth')?.value;
-    
-    // Skip auth check for now - implement proper auth before launch
-    // if (!opsAuth && process.env.NODE_ENV === 'production') {
-    //   return NextResponse.redirect(new URL('/ops/login', request.url));
-    // }
+    const opsSecret = process.env.OPS_AUTH_SECRET;
+
+    if (!opsAuth || !opsSecret || opsAuth !== opsSecret) {
+      return NextResponse.redirect(new URL('/ops/login', request.url));
+    }
   }
 
   // Protect cron routes

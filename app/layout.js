@@ -1,4 +1,5 @@
 import './globals.css'
+import ErrorBoundary from '@/components/ErrorBoundary'
 
 export const metadata = {
   title: 'FLEX | Gym Clothes Laundry Made Easy',
@@ -34,7 +35,9 @@ export default function RootLayout({ children }) {
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="bg-white text-gray-900 antialiased">
-        {children}
+        <ErrorBoundary>
+          {children}
+        </ErrorBoundary>
       </body>
     </html>
   )
