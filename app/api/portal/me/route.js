@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
-import { getMemberById, getDropsRemaining } from '@/lib/airtable';
+import { getMemberById, getMemberDropsRemaining } from '@/lib/airtable';
 
 export async function GET() {
   try {
@@ -24,11 +24,11 @@ export async function GET() {
       phone: fields['Phone'],
       plan: fields['Subscription Tier'],
       status: fields['Subscription Status'],
-      gym: fields['Gym Name (from Gym)']?.[0] || null,
+      gym: fields['Gym Name']?.[0] || null,
       dropsAllowed: fields['Drops Allowed'] || 0,
       dropsUsed: fields['Drops Used'] || 0,
-      dropsRemaining: getDropsRemaining(fields),
-      memberSince: fields['Created At'],
+      dropsRemaining: getMemberDropsRemaining(fields),
+      memberSince: fields['Signup Date'],
       referralCode: fields['Referral Code'],
     });
   } catch (err) {
