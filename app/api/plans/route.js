@@ -35,10 +35,11 @@ export async function GET() {
             name: r.fields['Name'] || '',
             slug: r.fields['Slug'] || '',
             price: r.fields['Price'] || 0,
-            drops: r.fields['Drops Per Month'] || 1,
+            drops: r.fields['Drops Allowed'] || 1,
             description: r.fields['Description'] || '',
             stripePriceId: r.fields['Stripe Price ID'] || '',
             isPopular: r.fields['Is Popular'] || false,
+            isSubscription: r.fields['Slug'] !== 'payg',
             features: r.fields['Features'] ? r.fields['Features'].split('\n') : [],
           }))
 

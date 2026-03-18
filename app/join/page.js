@@ -402,7 +402,7 @@ function JoinPageContent() {
                           <p className="font-semibold text-flex-navy">{plan.name}</p>
                           <p className="text-sm text-gray-500">
                             {plan.drops} drop{plan.drops !== 1 ? 's' : ''}{' '}
-                            {plan.slug !== 'single' && plan.slug !== 'oneoff' ? 'per month' : ''}
+                            {plan.slug !== 'single' && plan.slug !== 'oneoff' && plan.slug !== 'payg' ? 'per month' : ''}
                           </p>
                         </div>
                         <div className="text-right">
