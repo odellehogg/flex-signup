@@ -30,7 +30,7 @@ export async function GET(request) {
         // FIX: Airtable uses 'Is Active' checkbox not 'Status' text field
         .filter(g => g.fields['Is Active'] === true)
         .map(g => ({
-          id: g.id,
+          id: g.id
           code: g.fields['Slug'],
           name: g.fields['Name'],
           address: g.fields['Address'],
