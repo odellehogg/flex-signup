@@ -1,6 +1,8 @@
 // app/api/plans/route.js
 // Fetch active plans from Airtable CMS or use defaults
 
+export const dynamic = 'force-dynamic';
+
 import { NextResponse } from 'next/server'
 
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY
@@ -18,12 +20,7 @@ export async function GET() {
 
       const response = await fetch(
         `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Plans?${params}`,
-        {
-          headers: {
-            Authorization: `Bearer ${AIRTABLE_API_KEY}`,
-          },
-          next: { revalidate: 300 },
-        }
+        { headers: { Authorization: `Bearer ${AIRTABLE_API_KEY}` } }
       )
 
       if (response.ok) {
