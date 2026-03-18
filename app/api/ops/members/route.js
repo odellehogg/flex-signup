@@ -33,7 +33,7 @@ export async function GET(request) {
     const params = new URLSearchParams({
       pageSize: Math.min(limit, 100).toString(),
     });
-    params.append('sort[0][field]', 'Created Time');
+    params.append('sort[0][field]', 'First Name');
     params.append('sort[0][direction]', 'desc');
 
     if (filterFormula) {
