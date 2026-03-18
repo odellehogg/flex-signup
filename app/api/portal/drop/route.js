@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
-import { getDropsByMember } from '@/lib/airtable';
+import { getAllDropsByMember } from '@/lib/airtable';
 
 export async function GET() {
   try {
@@ -12,7 +12,7 @@ export async function GET() {
     const payload = verifyToken(token);
     if (!payload) return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
 
-    const drops = await getDropsByMember(payload.memberId);
+    const drops = await getAllDropsByMember(payload.memberId);
 
     const formatted = drops.map(d => ({
       id: d.id,
