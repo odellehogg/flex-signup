@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import {
   getMemberByPhone, updateMember, createDrop, getActiveDropsByMember,
-  validateBag, createIssue, normalizePhone, getGymById, getDropsRemaining,
-  getDropsByMember,
+  validateBag, createIssue, normalizePhone, getGymById, getMemberDropsRemaining,
 } from '@/lib/airtable';
 import {
   sendMainMenu, sendDropGuide, sendInvalidBagNumber, sendDropConfirmed,
@@ -103,7 +102,7 @@ async function handleIdleState(member, input, phone, firstName) {
 
 async function startDropFlow(member, phone) {
   // FIX: use getDropsRemaining helper (Drops Allowed - Drops Used)
-  const dropsRemaining = getDropsRemaining(member.fields);
+  const dropsRemaining = getMemberDropsRemaining(member.fields);
   if (dropsRemaining <= 0) { await sendNoDropsRemaining(phone); return; }
   const gymId = member.fields['Gym']?.[0];
   let gymName = 'your gym';
@@ -123,7 +122,7 @@ async function handleAwaitingBag(member, input, phone) {
   }
   const { bag, bagNumber } = validation;
   // FIX: recompute remaining after validation
-  const dropsRemaining = getDropsRemaining(member.fields);
+  const dropsRemaining = getMemberDropsRemaining(member.fields);
   if (dropsRemaining <= 0) {
     await sendNoDropsRemaining(phone);
     await updateMember(member.id, { 'Conversation State': CONVERSATION_STATES.IDLE });
@@ -152,7 +151,7 @@ async function handleAwaitingBag(member, input, phone) {
 async function showDropStatus(member, phone) {
   const activeDrops = await getActiveDropsByMember(member.id);
   // FIX: correct computation
-  const dropsRemaining = getDropsRemaining(member.fields);
+  const dropsRemaining = getMemberDropsRemaining(member.fields);
   const dropsTotal = getDropsForPlan(member.fields['Subscription Tier'] || 'Essential');
   await sendDropStatus(phone, { activeDrops, dropsRemaining, dropsTotal });
 }
