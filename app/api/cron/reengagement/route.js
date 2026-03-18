@@ -29,8 +29,8 @@ export async function GET(request) {
     const dateStr = fourteenDaysAgo.toISOString().split('T')[0];
 
     const filterFormula = `AND(
-      {Status} = "Active",
-      {Drops Remaining} > 0,
+      {Subscription Status} = "Active",
+      {Drops Allowed} > {Drops Used},
       OR(
         {Last Drop Date} = "",
         {Last Drop Date} < "${dateStr}"
@@ -65,9 +65,9 @@ export async function GET(request) {
 
     for (const member of members) {
       try {
-        const phone = member.fields['Phone Number'];
+        const phone = member.fields['Phone'];
         const firstName = member.fields['First Name'] || 'there';
-        const dropsRemaining = member.fields['Drops Remaining'];
+        const dropsRemaining = (member.fields['Drops Allowed'] || 0) - (member.fields['Drops Used'] || 0);
         
         // Get subscription end date (approximate - end of billing period)
         const expiryDate = new Date();

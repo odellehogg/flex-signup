@@ -9,7 +9,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 export async function POST() {
   try {
     const cookieStore = cookies();
-    const token = cookieStore.get('flex_session')?.value;
+    const token = cookieStore.get('flex_auth')?.value;
     if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
     const payload = verifyToken(token);

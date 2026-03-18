@@ -27,13 +27,14 @@ export async function GET(request) {
 
     let filterFormula = '';
     if (status) {
-      filterFormula = `{Status} = "${status}"`;
+      filterFormula = `{Subscription Status} = "${status}"`;
     }
 
     const params = new URLSearchParams({
       pageSize: Math.min(limit, 100).toString(),
-      sort: JSON.stringify([{ field: 'Created', direction: 'desc' }]),
     });
+    params.append('sort[0][field]', 'Created Time');
+    params.append('sort[0][direction]', 'desc');
 
     if (filterFormula) {
       params.set('filterByFormula', filterFormula);
@@ -60,12 +61,13 @@ export async function GET(request) {
       firstName: r.fields['First Name'],
       lastName: r.fields['Last Name'],
       email: r.fields['Email'],
-      phone: r.fields['Phone Number'],
+      phone: r.fields['Phone'],
       plan: r.fields['Subscription Tier'],
-      status: r.fields['Status'],
+      status: r.fields['Subscription Status'],
       gym: r.fields['Gym Name'],
-      dropsRemaining: r.fields['Drops Remaining'],
-      totalDrops: r.fields['Total Drops'],
+      dropsAllowed: r.fields['Drops Allowed'] || 0,
+      dropsUsed: r.fields['Drops Used'] || 0,
+      dropsRemaining: (r.fields['Drops Allowed'] || 0) - (r.fields['Drops Used'] || 0),
       createdAt: r.createdTime,
     }));
 

@@ -3,6 +3,6 @@ import { cookies } from 'next/headers';
 
 export async function POST() {
   const cookieStore = cookies();
-  cookieStore.delete('flex_session');
+  cookieStore.delete('flex_auth');
   return NextResponse.json({ success: true });
 }

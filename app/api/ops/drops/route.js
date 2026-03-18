@@ -21,9 +21,10 @@ export async function GET(request) {
 
     const params = new URLSearchParams({
       pageSize: Math.min(limit, 100).toString(),
-      sort: JSON.stringify([{ field: 'Drop Date', direction: 'desc' }]),
       filterByFormula: filterFormula,
     });
+    params.append('sort[0][field]', 'Drop Date');
+    params.append('sort[0][direction]', 'desc');
 
     const response = await fetch(
       `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Drops?${params}`,
@@ -46,7 +47,7 @@ export async function GET(request) {
       bagNumber: r.fields['Bag Number'],
       status: r.fields['Status'],
       dropDate: r.fields['Drop Date'],
-      expectedReady: r.fields['Expected Ready'],
+      availableUntil: r.fields['Available Until'],
       memberName: r.fields['Member Name'],
       memberPhone: r.fields['Member Phone'],
       gym: r.fields['Gym Name'],

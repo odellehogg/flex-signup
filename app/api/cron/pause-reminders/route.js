@@ -20,7 +20,7 @@ export async function GET(request) {
 
   try {
     // Find paused members
-    const filterFormula = `{Status} = "Paused"`;
+    const filterFormula = `{Subscription Status} = "Paused"`;
 
     const params = new URLSearchParams({
       filterByFormula: filterFormula,
@@ -64,7 +64,7 @@ export async function GET(request) {
         const threeDaysFromNow = Date.now() + (3 * 24 * 60 * 60 * 1000);
 
         if (resumeTime > Date.now() && resumeTime <= threeDaysFromNow) {
-          const phone = member.fields['Phone Number'];
+          const phone = member.fields['Phone'];
           const firstName = member.fields['First Name'] || 'there';
           const resumeDateStr = new Date(resumeTime).toLocaleDateString('en-GB', {
             weekday: 'long',

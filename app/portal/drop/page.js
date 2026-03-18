@@ -29,12 +29,12 @@ export default function PortalDropPage() {
       const res = await fetch('/api/portal/me');
       const data = await res.json();
       
-      if (!res.ok || !data.member) {
+      if (!res.ok || !data.firstName) {
         router.push('/portal/login');
         return;
       }
       
-      setMember(data.member);
+      setMember(data);
     } catch (err) {
       console.error('Error fetching member:', err);
       router.push('/portal/login');
@@ -89,8 +89,8 @@ export default function PortalDropPage() {
     );
   }
 
-  const dropsRemaining = member?.fields?.['Drops Remaining'] || 0;
-  const gymName = member?.fields?.['Gym Name']?.[0] || 'your gym';
+  const dropsRemaining = member?.dropsRemaining ?? 0;
+  const gymName = member?.gym || 'your gym';
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">

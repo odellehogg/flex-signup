@@ -50,12 +50,13 @@ export default async function PortalDashboard() {
     firstName: member.fields['First Name'],
     lastName: member.fields['Last Name'],
     email: member.fields['Email'],
-    phone: member.fields['Phone Number'],
-    gym: member.fields['Gym']?.[0] ? member.fields['Gym Name'] || 'Your Gym' : 'No gym set',
+    phone: member.fields['Phone'],
+    gym: member.fields['Gym']?.[0] ? (member.fields['Gym Name']?.[0] || 'Your Gym') : 'No gym set',
     plan: member.fields['Subscription Tier'] || 'None',
-    status: member.fields['Status'] || 'Unknown',
-    dropsRemaining: member.fields['Drops Remaining'] || 0,
-    totalDrops: member.fields['Total Drops'] || 0,
+    status: member.fields['Subscription Status'] || 'Unknown',
+    dropsAllowed: member.fields['Drops Allowed'] || 0,
+    dropsUsed: member.fields['Drops Used'] || 0,
+    dropsRemaining: (member.fields['Drops Allowed'] || 0) - (member.fields['Drops Used'] || 0),
   };
 
   const subscriptionData = subscription ? {
@@ -69,7 +70,7 @@ export default async function PortalDashboard() {
     bagNumber: drop.fields['Bag Number'],
     status: drop.fields['Status'],
     dropDate: drop.fields['Drop Date'],
-    expectedReady: drop.fields['Expected Ready'],
+    availableUntil: drop.fields['Available Until'],
   }));
 
   return (

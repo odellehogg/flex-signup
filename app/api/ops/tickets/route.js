@@ -15,9 +15,10 @@ export async function GET(request) {
 
     const params = new URLSearchParams({
       pageSize: Math.min(limit, 100).toString(),
-      sort: JSON.stringify([{ field: 'Created', direction: 'desc' }]),
       filterByFormula: filterFormula,
     });
+    params.append('sort[0][field]', 'Created At');
+    params.append('sort[0][direction]', 'desc');
 
     const response = await fetch(
       `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Issues?${params}`,
@@ -37,13 +38,13 @@ export async function GET(request) {
 
     const tickets = data.records.map(r => ({
       id: r.id,
-      type: r.fields['Issue Type'],
+      type: r.fields['Type'],
       description: r.fields['Description'],
       status: r.fields['Status'],
       priority: r.fields['Priority'] || 'Normal',
       memberName: r.fields['Member Name'],
       memberPhone: r.fields['Member Phone'],
-      photoUrls: r.fields['Photo URLs'],
+      photoUrl: r.fields['Photo URL'],
       createdAt: r.createdTime,
     }));
 
