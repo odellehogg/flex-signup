@@ -14,16 +14,36 @@ import Header from '@/components/Header'
 import Footer from '@/components/Footer'
 
 const countryCodes = [
-  { code: '+44', country: 'UK', flag: '🇬🇧', pattern: /^7\d{9}$/ },
-  { code: '+353', country: 'Ireland', flag: '🇮🇪' },
-  { code: '+1', country: 'US', flag: '🇺🇸' },
-  { code: '+33', country: 'France', flag: '🇫🇷' },
-  { code: '+49', country: 'Germany', flag: '🇩🇪' },
-  { code: '+34', country: 'Spain', flag: '🇪🇸' },
-  { code: '+39', country: 'Italy', flag: '🇮🇹' },
-  { code: '+31', country: 'Netherlands', flag: '🇳🇱' },
-  { code: '+61', country: 'Australia', flag: '🇦🇺' },
-  { code: '+971', country: 'UAE', flag: '🇦🇪' },
+  { code: '+44', country: 'UK', flag: '🇬🇧', pattern: /^7\d{9}$/, placeholder: '7123 456789' },
+  { code: '+353', country: 'Ireland', flag: '🇮🇪', pattern: /^8[3-9]\d{7}$/, placeholder: '87 123 4567' },
+  { code: '+1', country: 'US/CA', flag: '🇺🇸', pattern: /^\d{10}$/, placeholder: '212 555 1234' },
+  { code: '+33', country: 'France', flag: '🇫🇷', pattern: /^[67]\d{8}$/, placeholder: '6 12 34 56 78' },
+  { code: '+49', country: 'Germany', flag: '🇩🇪', pattern: /^1[5-7]\d{8,9}$/, placeholder: '151 12345678' },
+  { code: '+34', country: 'Spain', flag: '🇪🇸', pattern: /^[67]\d{8}$/, placeholder: '612 345 678' },
+  { code: '+39', country: 'Italy', flag: '🇮🇹', pattern: /^3\d{8,9}$/, placeholder: '312 345 6789' },
+  { code: '+31', country: 'Netherlands', flag: '🇳🇱', pattern: /^6\d{8}$/, placeholder: '6 12345678' },
+  { code: '+61', country: 'Australia', flag: '🇦🇺', pattern: /^4\d{8}$/, placeholder: '412 345 678' },
+  { code: '+971', country: 'UAE', flag: '🇦🇪', pattern: /^5[0-9]\d{7}$/, placeholder: '50 123 4567' },
+  { code: '+91', country: 'India', flag: '🇮🇳', pattern: /^[6-9]\d{9}$/, placeholder: '98765 43210' },
+  { code: '+27', country: 'South Africa', flag: '🇿🇦', pattern: /^[6-8]\d{8}$/, placeholder: '71 234 5678' },
+  { code: '+48', country: 'Poland', flag: '🇵🇱', pattern: /^\d{9}$/, placeholder: '512 345 678' },
+  { code: '+46', country: 'Sweden', flag: '🇸🇪', pattern: /^7\d{8}$/, placeholder: '70 123 4567' },
+  { code: '+47', country: 'Norway', flag: '🇳🇴', pattern: /^[49]\d{7}$/, placeholder: '412 34 567' },
+  { code: '+45', country: 'Denmark', flag: '🇩🇰', pattern: /^\d{8}$/, placeholder: '20 12 34 56' },
+  { code: '+351', country: 'Portugal', flag: '🇵🇹', pattern: /^9\d{8}$/, placeholder: '912 345 678' },
+  { code: '+41', country: 'Switzerland', flag: '🇨🇭', pattern: /^7[5-9]\d{7}$/, placeholder: '76 123 45 67' },
+  { code: '+32', country: 'Belgium', flag: '🇧🇪', pattern: /^4\d{8}$/, placeholder: '470 12 34 56' },
+  { code: '+43', country: 'Austria', flag: '🇦🇹', pattern: /^6\d{8,10}$/, placeholder: '664 1234567' },
+  { code: '+81', country: 'Japan', flag: '🇯🇵', pattern: /^[789]0\d{8}$/, placeholder: '90 1234 5678' },
+  { code: '+86', country: 'China', flag: '🇨🇳', pattern: /^1\d{10}$/, placeholder: '138 0013 8000' },
+  { code: '+82', country: 'South Korea', flag: '🇰🇷', pattern: /^1[0-9]\d{7,8}$/, placeholder: '10 1234 5678' },
+  { code: '+65', country: 'Singapore', flag: '🇸🇬', pattern: /^[89]\d{7}$/, placeholder: '8123 4567' },
+  { code: '+852', country: 'Hong Kong', flag: '🇭🇰', pattern: /^[5-9]\d{7}$/, placeholder: '5123 4567' },
+  { code: '+55', country: 'Brazil', flag: '🇧🇷', pattern: /^[1-9]\d{10}$/, placeholder: '11 98765 4321' },
+  { code: '+52', country: 'Mexico', flag: '🇲🇽', pattern: /^\d{10}$/, placeholder: '55 1234 5678' },
+  { code: '+64', country: 'New Zealand', flag: '🇳🇿', pattern: /^2[0-9]\d{7,8}$/, placeholder: '21 123 4567' },
+  { code: '+60', country: 'Malaysia', flag: '🇲🇾', pattern: /^1\d{8,9}$/, placeholder: '12 345 6789' },
+  { code: '+66', country: 'Thailand', flag: '🇹🇭', pattern: /^[689]\d{8}$/, placeholder: '81 234 5678' },
 ]
 
 function JoinPageContent() {
@@ -85,12 +105,24 @@ function JoinPageContent() {
     fetchData()
   }, [])
 
+  const cleanPhone = (raw) => {
+    let digits = raw.replace(/\D/g, '')
+    // Strip leading 0 (common in UK/IE/DE/etc)
+    if (digits.startsWith('0')) digits = digits.substring(1)
+    // Strip country code if user accidentally included it
+    const cc = formData.countryCode.replace('+', '')
+    if (digits.startsWith(cc)) digits = digits.substring(cc.length)
+    return digits
+  }
+
   const validatePhone = () => {
     const country = countryCodes.find(c => c.code === formData.countryCode)
-    let phoneDigits = formData.phone.replace(/\D/g, '')
-    if (phoneDigits.startsWith('0')) phoneDigits = phoneDigits.substring(1)
-    if (country?.pattern) return country.pattern.test(phoneDigits)
-    return phoneDigits.length >= 7 && phoneDigits.length <= 15
+    const digits = cleanPhone(formData.phone)
+    if (digits.length < 7 || digits.length > 15) return false
+    // If country has a specific pattern, validate against it
+    if (country?.pattern) return country.pattern.test(digits)
+    // Fallback: accept any 7-15 digit number
+    return true
   }
 
   const handleNext = () => {
@@ -110,8 +142,7 @@ function JoinPageContent() {
   const handleSubmit = async () => {
     setSubmitting(true)
     try {
-      let phoneDigits = formData.phone.replace(/\D/g, '')
-      if (phoneDigits.startsWith('0')) phoneDigits = phoneDigits.substring(1)
+      const phoneDigits = cleanPhone(formData.phone)
       const fullPhone = `${formData.countryCode}${phoneDigits}`
 
       // formData already uses 'plan' and 'gym' which matches the checkout API
@@ -347,7 +378,7 @@ function JoinPageContent() {
                         value={formData.phone}
                         onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                         className="input-field flex-1"
-                        placeholder={formData.countryCode === '+44' ? '7123 456789' : 'Phone number'}
+                        placeholder={countryCodes.find(c => c.code === formData.countryCode)?.placeholder || 'Phone number'}
                         required
                       />
                     </div>
@@ -562,4 +593,4 @@ export default function JoinPage() {
       <JoinPageContent />
     </Suspense>
   )
-}
+                      }
