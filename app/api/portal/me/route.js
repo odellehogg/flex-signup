@@ -37,8 +37,7 @@ export async function GET() {
           console.error('[Portal /me] Error:', err);
           return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
-}export const dynamic = 'force-dynamic';
-
+}
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
