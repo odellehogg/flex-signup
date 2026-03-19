@@ -142,6 +142,16 @@ async function handlePaymentSucceeded(invoice) {
     }).catch(err => console.error('[Stripe] Reset drops failed:', err));
 
     console.log(`[Stripe] Reset drops for member: ${member.id}`);
+
+    // Send drop reset notification via WhatsApp
+    const phone = member.fields['Phone'];
+    const firstName = member.fields['First Name'] || 'there';
+    if (phone) {
+      const { sendPlainTextMessage } = await import('@/lib/whatsapp');
+      await sendPlainTextMessage(phone,
+        `Hey ${firstName}! Your ${dropsAllowed} drops have been refreshed for this month. 🎉\n\nReady to make a drop? Reply 1 or text DROP!`
+      ).catch(e => console.error('[Stripe] Drop reset notification failed:', e));
+    }
   }
 }
 
