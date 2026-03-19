@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 // app/api/checkout/success/route.js
 // ============================================================================
 // CHECKOUT SUCCESS VERIFICATION
