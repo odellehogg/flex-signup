@@ -10,7 +10,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 export async function POST() {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const token = cookieStore.get('flex_auth')?.value;
     if (!token) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
@@ -34,5 +34,3 @@ export async function POST() {
   } catch (err) {
     console.error('[Portal /billing] Error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
-  }
-}
