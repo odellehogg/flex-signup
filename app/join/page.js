@@ -77,7 +77,10 @@ function JoinPageContent() {
     location: '',
   })
 
-  const totalSteps = preselectedGym ? 2 : 3
+  // Calculate steps: skip gym if preselected, skip plan if preselected
+  const needsGymStep = !preselectedGym
+  const needsPlanStep = !preselectedPlan
+  const totalSteps = (needsGymStep ? 1 : 0) + 1 + (needsPlanStep ? 1 : 0) // gym? + details + plan?
 
   useEffect(() => {
     async function fetchData() {
@@ -125,13 +128,20 @@ function JoinPageContent() {
     return true
   }
 
+  // Determine which step shows which content
+  const gymStep = needsGymStep ? 1 : 0
+  const detailsStep = needsGymStep ? 2 : 1
+  const planStep = needsPlanStep ? (needsGymStep ? 3 : 2) : 0
+
   const handleNext = () => {
-    if (step === 2 && !preselectedGym && !validatePhone()) {
+    // Validate phone on details step
+    if (step === detailsStep && !validatePhone()) {
       alert('Please enter a valid phone number')
       return
     }
-    if ((step === 1 && preselectedGym) && !validatePhone()) {
-      alert('Please enter a valid phone number')
+    // If plan is preselected and we're on details, go straight to payment
+    if (step === detailsStep && preselectedPlan) {
+      handleSubmit()
       return
     }
     setStep(step + 1)
@@ -242,15 +252,15 @@ function JoinPageContent() {
               <div className="text-center mt-4">
                 <p className="text-sm text-gray-500">
                   Step {step} of {totalSteps}:{' '}
-                  {step === 1 && !preselectedGym ? 'Choose Your Gym' :
-                   (step === 2 && !preselectedGym) || (step === 1 && preselectedGym) ? 'Your Details' :
-                   'Choose Your Plan'}
+                  {step === gymStep && needsGymStep ? 'Choose Your Gym' :
+                   step === detailsStep ? 'Your Details' :
+                   step === planStep ? 'Choose Your Plan' : ''}
                 </p>
               </div>
             </div>
 
-            {/* Step 1: Gym Selection */}
-            {step === 1 && !preselectedGym && (
+            {/* Step 1: Gym Selection (only if gym not pre-selected) */}
+            {step === gymStep && needsGymStep && (
               <div className="bg-white rounded-2xl shadow-lg p-8">
                 <h2 className="text-2xl font-bold text-flex-navy mb-6">Choose Your Gym</h2>
 
@@ -320,8 +330,8 @@ function JoinPageContent() {
               </div>
             )}
 
-            {/* Step 2: Your Details */}
-            {((step === 2 && !preselectedGym) || (step === 1 && preselectedGym)) && (
+            {/* Your Details Step */}
+            {step === detailsStep && (
               <div className="bg-white rounded-2xl shadow-lg p-8">
                 <h2 className="text-2xl font-bold text-flex-navy mb-6">Your Details</h2>
                 <div className="space-y-4">
@@ -386,23 +396,38 @@ function JoinPageContent() {
                   </div>
                 </div>
 
+                {/* Show order summary when plan is pre-selected (skip plan step) */}
+                {preselectedPlan && selectedPlan && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-xl">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold text-flex-navy">{selectedPlan.name} Plan</p>
+                        <p className="text-sm text-gray-500">{selectedPlan.drops} drop{selectedPlan.drops !== 1 ? 's' : ''} {selectedPlan.isSubscription ? 'per month' : ''}</p>
+                      </div>
+                      <p className="text-lg font-bold text-flex-navy">
+                        £{selectedPlan.price}{selectedPlan.isSubscription ? '/mo' : ''}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex space-x-4 mt-6">
-                  {!preselectedGym && (
+                  {needsGymStep && (
                     <button onClick={handleBack} className="btn-secondary flex-1">Back</button>
                   )}
                   <button
                     onClick={handleNext}
-                    disabled={!formData.firstName || !formData.email || !formData.phone}
-                    className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!formData.firstName || !formData.email || !formData.phone || submitting}
+                    className={`${preselectedPlan ? 'btn-accent' : 'btn-primary'} flex-1 disabled:opacity-50 disabled:cursor-not-allowed`}
                   >
-                    Continue
+                    {submitting ? 'Processing...' : preselectedPlan ? 'Continue to Payment' : 'Continue'}
                   </button>
                 </div>
               </div>
             )}
 
-            {/* Step 3: Plan Selection */}
-            {((step === 3 && !preselectedGym) || (step === 2 && preselectedGym)) && (
+            {/* Plan Selection Step (only if plan not pre-selected) */}
+            {step === planStep && needsPlanStep && (
               <div className="bg-white rounded-2xl shadow-lg p-8">
                 <h2 className="text-2xl font-bold text-flex-navy mb-6">Choose Your Plan</h2>
                 <div className="space-y-4">
@@ -462,7 +487,7 @@ function JoinPageContent() {
 
                 <div className="flex space-x-4 mt-6">
                   <button
-                    onClick={() => setStep(preselectedGym ? 1 : 2)}
+                    onClick={() => setStep(detailsStep)}
                     className="btn-secondary flex-1"
                   >
                     Back
