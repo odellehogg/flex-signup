@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 // app/api/portal/verify-code/route.js
 // ============================================================================
 // PORTAL LOGIN CODE VERIFICATION
