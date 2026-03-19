@@ -94,10 +94,18 @@ function SuccessContent() {
                   1
                 </div>
                 <div className="ml-4">
-                  <h3 className="font-medium">Check WhatsApp</h3>
+                  <h3 className="font-medium">Save our WhatsApp number</h3>
                   <p className="text-sm text-gray-600">
-                    We've sent you a welcome message with your account details.
+                    Save <strong>+44 7366 907286</strong> as "FLEX" in your contacts. We've sent you a welcome message — check WhatsApp!
                   </p>
+                  <a
+                    href="https://wa.me/447366907286?text=Hi"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center mt-2 text-sm text-green-600 hover:text-green-700 font-medium"
+                  >
+                    Open WhatsApp Chat →
+                  </a>
                 </div>
               </div>
 
@@ -120,7 +128,7 @@ function SuccessContent() {
                 <div className="ml-4">
                   <h3 className="font-medium">Drop your clothes</h3>
                   <p className="text-sm text-gray-600">
-                    Fill the bag with your sweaty gym clothes and leave it at reception.
+                    Fill the bag with gym clothes, leave at reception, then text <strong>DROP</strong> on WhatsApp with your bag number.
                   </p>
                 </div>
               </div>
