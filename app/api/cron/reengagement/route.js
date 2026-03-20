@@ -1,15 +1,14 @@
-Re-engagement: only send when no active drops in progressimport { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getActiveDropsByMember } from '@/lib/airtable';
 import { sendReengagement } from '@/lib/whatsapp';
 
 const AIRTABLE_API_KEY = process.env.AIRTABLE_API_KEY;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
 
-// Verify cron secret
 function verifyCronSecret(request) {
   const authHeader = request.headers.get('authorization');
   const expectedSecret = process.env.CRON_SECRET;
-  if (!expectedSecret) return true; // No secret configured, allow
+  if (!expectedSecret) return true;
   return authHeader === `Bearer ${expectedSecret}`;
 }
 
@@ -51,7 +50,6 @@ export async function GET(request) {
         const member = { id: record.id, fields: record.fields };
 
         // Only message members with NO active drops currently in progress
-        // (i.e. nothing sitting at Dropped / In Transit / At Laundry / Ready)
         const activeDrops = await getActiveDropsByMember(member);
         if (activeDrops.length > 0) {
           skipped++;
@@ -64,14 +62,10 @@ export async function GET(request) {
         const firstName = record.fields['First Name'] || 'there';
         const dropsRemaining = (record.fields['Drops Allowed'] || 0) - (record.fields['Drops Used'] || 0);
 
-        // Approximate billing period end — 30 days from now
-        // TODO: replace with actual Stripe billing_cycle_anchor when available
         const expiryDate = new Date();
         expiryDate.setDate(expiryDate.getDate() + 30);
         const expiryStr = expiryDate.toLocaleDateString('en-GB', {
-          day: 'numeric',
-          month: 'short',
-          timeZone: 'Europe/London',
+          day: 'numeric', month: 'short', timeZone: 'Europe/London',
         });
 
         await sendReengagement(phone, { firstName, dropsRemaining, expiryDate: expiryStr });
