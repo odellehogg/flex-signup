@@ -200,7 +200,7 @@ async function handleAwaitingSupport(member, message, mediaUrls, phone) {
   const email = member.fields['Email'];
   const issue = await createIssue({
     memberId: member.id,
-    type: 'Support Request',
+    type: 'Other',
     description: message,
     photoUrls: mediaUrls,
   });
