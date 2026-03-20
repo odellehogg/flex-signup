@@ -45,14 +45,17 @@ export async function POST(request) {
       return NextResponse.json({ status: 'unknown_user' });
     }
 
-    // FIX: correct field name is 'Subscription Status' not 'Status'
-    const subStatus = member.fields['Subscription Status'];
+    // Handle both string ("Active") and object ({name: "Active"}) formats from Airtable
+    const subStatusRaw = member.fields['Subscription Status'];
+    const subStatus = typeof subStatusRaw === 'object' ? subStatusRaw?.name : subStatusRaw;
     if (subStatus !== 'Active') {
       await sendNotAMember(phone);
       return NextResponse.json({ status: 'inactive_member' });
     }
 
-    const state = member.fields['Conversation State'] || CONVERSATION_STATES.IDLE;
+    // Handle both string and object formats for Conversation State
+    const stateRaw = member.fields['Conversation State'];
+    const state = (typeof stateRaw === 'object' ? stateRaw?.name : stateRaw) || CONVERSATION_STATES.IDLE;
     await handleMessage({ member, body, state, mediaUrls, phone });
     return NextResponse.json({ status: 'ok' });
   } catch (err) {
@@ -88,15 +91,33 @@ async function handleMessage({ member, body, state, mediaUrls, phone }) {
 }
 
 async function handleIdleState(member, input, phone, firstName) {
+  // Handle standard commands
   if (matchesCommand(input, 'DROP')) { await startDropFlow(member, phone); return; }
   if (matchesCommand(input, 'STATUS')) { await showDropStatus(member, phone); return; }
   if (matchesCommand(input, 'SUPPORT')) { await startSupportFlow(member, phone); return; }
-  // Allow direct bag number entry
-  if (/^B?\d{1,4}$/i.test(input)) {
+
+  // Allow direct bag number entry in various formats: B042, 042, bag 42, B-042, bag#42
+  const bagMatch = input.match(/^(?:BAG\s*#?\s*)?B?-?0*(\d{1,4})$/i);
+  if (bagMatch) {
+    const normalizedInput = `B${bagMatch[1].padStart(3, '0')}`;
     await startDropFlow(member, phone);
-    await handleAwaitingBag(member, input, phone);
+    await handleAwaitingBag(member, normalizedInput, phone);
     return;
   }
+
+  // Handle common responses that don't need "I didn't catch that"
+  const thankYouPatterns = /^(thanks?|thank\s*you|cheers|great|ok|okay|cool|got\s*it|perfect|ace|lovely|ta|nice|👍|👌|🙏|✅|😊)$/i;
+  if (thankYouPatterns.test(input.trim())) {
+    await sendMainMenu(phone, firstName);
+    return;
+  }
+
+  // Handle empty or emoji-only messages
+  if (!input || input.replace(/[\p{Emoji}\s]/gu, '').length === 0) {
+    await sendMainMenu(phone, firstName);
+    return;
+  }
+
   await sendUnknownCommand(phone, firstName);
 }
 
@@ -140,12 +161,14 @@ async function handleAwaitingBag(member, input, phone) {
   const expectedDate = expectedReady.toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'short',
   });
-  // FIX: increment 'Drops Used' (not non-existent 'Drops Remaining')
+  // Increment 'Drops Used' and reset conversation state
+  const newDropsUsed = (member.fields['Drops Used'] || 0) + 1;
+  const newDropsRemaining = Math.max(0, (member.fields['Drops Allowed'] || 0) - newDropsUsed);
   await updateMember(member.id, {
-    'Drops Used': (member.fields['Drops Used'] || 0) + 1,
+    'Drops Used': newDropsUsed,
     'Conversation State': CONVERSATION_STATES.IDLE,
   });
-  await sendDropConfirmed(phone, { bagNumber, gymName, expectedDate });
+  await sendDropConfirmed(phone, { bagNumber, gymName, expectedDate, dropsRemaining: newDropsRemaining });
 }
 
 async function showDropStatus(member, phone) {
