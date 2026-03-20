@@ -11,7 +11,7 @@
   "crons": [
     {
       "path": "/api/cron/reengagement",
-      "schedule": "0 10 * * *"
+      "schedule": "0 10 * * 1"
     },
     {
       "path": "/api/cron/pause-reminders",
