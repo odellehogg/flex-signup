@@ -8,6 +8,7 @@ import {
   sendNoDropsRemaining, sendDropStatus, sendSupportPrompt, sendSupportConfirmed,
   sendUnknownCommand, sendNotAMember, sendSubscriptionPaused, sendSubscriptionInactive,
   sendManageMenu, sendBillingLink, sendMessage, sendError,
+  sendPickupConfirmedThanks,
 } from '@/lib/whatsapp';
 import { sendSupportTicketEmail } from '@/lib/email';
 import { COMPANY, CONVERSATION_STATES, matchesCommand } from '@/lib/constants';
@@ -46,21 +47,20 @@ export async function POST(request) {
       return NextResponse.json({ status: 'unknown_user' });
     }
 
-    // Handle both string ("Active") and object ({name: "Active"}) formats from Airtable
     const subStatusRaw = member.fields['Subscription Status'];
     const subStatus = typeof subStatusRaw === 'object' ? subStatusRaw?.name : subStatusRaw;
 
-    // Cancelling = still within their paid period, treat as Active
+    // Cancelling = still within paid period, treat as Active
     if (subStatus !== 'Active' && subStatus !== 'Cancelling') {
       if (subStatus === 'Paused') {
         await sendSubscriptionPaused(phone);
       } else {
+        // Cancelled, Past Due, unknown
         await sendSubscriptionInactive(phone);
       }
       return NextResponse.json({ status: 'inactive_member' });
     }
 
-    // Handle both string and object formats for Conversation State
     const stateRaw = member.fields['Conversation State'];
     const state = (typeof stateRaw === 'object' ? stateRaw?.name : stateRaw) || CONVERSATION_STATES.IDLE;
     await handleMessage({ member, body, state, mediaUrls, phone });
@@ -99,12 +99,12 @@ async function handleMessage({ member, body, state, mediaUrls, phone }) {
 }
 
 async function handleIdleState(member, input, phone, firstName) {
-  // Core drop/status/support commands (text + template button payloads)
+  // Core commands — text + template button payloads (see WHATSAPP_COMMANDS in constants.js)
   if (matchesCommand(input, 'DROP')) { await startDropFlow(member, phone); return; }
   if (matchesCommand(input, 'STATUS')) { await showDropStatus(member, phone); return; }
   if (matchesCommand(input, 'SUPPORT')) { await startSupportFlow(member, phone); return; }
 
-  // Subscription management — send portal link (no full sub management via WhatsApp yet)
+  // Subscription management
   if (matchesCommand(input, 'SUBSCRIPTION') || matchesCommand(input, 'BILLING') ||
       matchesCommand(input, 'PAUSE') || matchesCommand(input, 'RESUME')) {
     const planName = member.fields['Subscription Tier'] || 'Essential';
@@ -113,7 +113,7 @@ async function handleIdleState(member, input, phone, firstName) {
     return;
   }
 
-  // Feedback from post-pickup template buttons — acknowledge and offer menu
+  // Post-pickup feedback buttons (flex_pickup_confirmed_thanks: "Great" / "OK" / "Not Good")
   if (matchesCommand(input, 'FEEDBACK_GREAT')) {
     await sendMessage(phone,
       `Brilliant! Really glad to hear it. 😊\n\n` +
@@ -135,11 +135,19 @@ async function handleIdleState(member, input, phone, firstName) {
     return;
   }
 
-  // Ready-notification response buttons
+  // Pickup confirmed (flex_pickup_reminder / flex_pickup_confirm_request: "Yes, I've Collected")
+  if (matchesCommand(input, 'PICKUP_CONFIRMED')) {
+    await sendPickupConfirmedThanks(phone);
+    return;
+  }
+
+  // Ready-notification response (flex_ready_pickup: "Got it")
   if (matchesCommand(input, 'ON_MY_WAY')) {
     await sendMessage(phone, `Great, see you soon! 👟\n\nJust ask reception for your FLEX bag.`);
     return;
   }
+
+  // Bag not yet collected (flex_pickup_confirm_request: "Not Yet")
   if (matchesCommand(input, 'NEED_MORE_TIME')) {
     await sendMessage(phone,
       `No problem! Your bag will be held at reception for 7 days.\n\n` +
@@ -148,7 +156,24 @@ async function handleIdleState(member, input, phone, firstName) {
     return;
   }
 
-  // Allow direct bag number entry in various formats: B042, 042, bag 42
+  // Pause management buttons (flex_pause_reminder: "Keep Current" / "Extend pause")
+  if (matchesCommand(input, 'KEEP_PAUSE')) {
+    await sendMessage(phone,
+      `All good — your subscription stays as is. ✅\n\n` +
+      `Your FLEX will resume on the scheduled date.`
+    );
+    return;
+  }
+  if (matchesCommand(input, 'EXTEND_PAUSE')) {
+    await sendMessage(phone,
+      `To extend your pause, visit your billing portal:\n\n` +
+      `${COMPANY.website}/portal\n\n` +
+      `Or reply HELP and we'll sort it for you.`
+    );
+    return;
+  }
+
+  // Direct bag number entry: B042, 042, bag 42
   const bagMatch = input.match(/^(?:BAG\s*#?\s*)?B?-?0*(\d{1,4})$/i);
   if (bagMatch) {
     const normalizedInput = `B${bagMatch[1].padStart(3, '0')}`;
@@ -158,7 +183,7 @@ async function handleIdleState(member, input, phone, firstName) {
     return;
   }
 
-  // Polite acknowledgements — just show menu, don't say "I didn't catch that"
+  // Polite acknowledgements
   const thankYouPatterns = /^(thanks?|thank\s*you|cheers|great|ok|okay|cool|got\s*it|perfect|ace|lovely|ta|nice|👍|👌|🙏|✅|😊)$/i;
   if (thankYouPatterns.test(input.trim())) {
     await sendMainMenu(phone, firstName);
