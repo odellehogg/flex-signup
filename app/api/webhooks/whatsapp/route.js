@@ -6,7 +6,7 @@ import {
 import {
   sendMainMenu, sendDropGuide, sendInvalidBagNumber, sendDropConfirmed,
   sendNoDropsRemaining, sendDropStatus, sendSupportPrompt, sendSupportConfirmed,
-  sendUnknownCommand, sendNotAMember, sendError,
+  sendUnknownCommand, sendNotAMember, sendSubscriptionPaused, sendSubscriptionInactive, sendError,
 } from '@/lib/whatsapp';
 import { sendSupportTicketEmail } from '@/lib/email';
 import { CONVERSATION_STATES, matchesCommand } from '@/lib/constants';
@@ -48,8 +48,15 @@ export async function POST(request) {
     // Handle both string ("Active") and object ({name: "Active"}) formats from Airtable
     const subStatusRaw = member.fields['Subscription Status'];
     const subStatus = typeof subStatusRaw === 'object' ? subStatusRaw?.name : subStatusRaw;
-    if (subStatus !== 'Active') {
-      await sendNotAMember(phone);
+
+    // Cancelling = still within their paid period, treat as Active
+    if (subStatus !== 'Active' && subStatus !== 'Cancelling') {
+      if (subStatus === 'Paused') {
+        await sendSubscriptionPaused(phone);
+      } else {
+        // Cancelled, Past Due, unknown, or no status
+        await sendSubscriptionInactive(phone);
+      }
       return NextResponse.json({ status: 'inactive_member' });
     }
 
@@ -159,10 +166,10 @@ async function handleAwaitingBag(member, input, phone) {
     gymName = g?.fields?.Name || 'your gym';
   }
   await createDrop({ memberId: member.id, bagId: bag.id, bagNumber, gymId });
-  const expectedReady = new Date();
-  expectedReady.setHours(expectedReady.getHours() + 48);
+  const expectedReady = new Date(Date.now() + 48 * 60 * 60 * 1000);
   const expectedDate = expectedReady.toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'short',
+    timeZone: 'Europe/London',
   });
   // Increment 'Drops Used' and reset conversation state
   const newDropsUsed = (member.fields['Drops Used'] || 0) + 1;
@@ -175,7 +182,7 @@ async function handleAwaitingBag(member, input, phone) {
 }
 
 async function showDropStatus(member, phone) {
-  const activeDrops = await getActiveDropsByMember(member.id);
+  const activeDrops = await getActiveDropsByMember(member);
   // FIX: correct computation
   const dropsRemaining = getMemberDropsRemaining(member.fields);
   const dropsTotal = getDropsForPlan(member.fields['Subscription Tier'] || 'Essential');
