@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { sendPlainTextMessage } from '@/lib/whatsapp';
+import { sendPauseReminder } from '@/lib/whatsapp';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
@@ -19,30 +19,20 @@ export async function GET(request) {
   }
 
   try {
-    // Find paused members
-    const filterFormula = `{Subscription Status} = "Paused"`;
-
     const params = new URLSearchParams({
-      filterByFormula: filterFormula,
+      filterByFormula: '{Subscription Status} = "Paused"',
       pageSize: '50',
     });
 
     const response = await fetch(
       `https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Members?${params}`,
-      {
-        headers: {
-          'Authorization': `Bearer ${AIRTABLE_API_KEY}`,
-        },
-      }
+      { headers: { 'Authorization': `Bearer ${AIRTABLE_API_KEY}` } }
     );
 
-    if (!response.ok) {
-      throw new Error(`Airtable error: ${response.status}`);
-    }
+    if (!response.ok) throw new Error(`Airtable error: ${response.status}`);
 
     const data = await response.json();
     const members = data.records;
-
     console.log(`Found ${members.length} paused members`);
 
     let sent = 0;
@@ -53,13 +43,10 @@ export async function GET(request) {
         const subscriptionId = member.fields['Stripe Subscription ID'];
         if (!subscriptionId) continue;
 
-        // Check when pause ends in Stripe
         const subscription = await stripe.subscriptions.retrieve(subscriptionId);
         const resumeDate = subscription.pause_collection?.resumes_at;
-
         if (!resumeDate) continue;
 
-        // Only notify if resuming within 3 days
         const resumeTime = resumeDate * 1000;
         const threeDaysFromNow = Date.now() + (3 * 24 * 60 * 60 * 1000);
 
@@ -67,18 +54,11 @@ export async function GET(request) {
           const phone = member.fields['Phone'];
           const firstName = member.fields['First Name'] || 'there';
           const resumeDateStr = new Date(resumeTime).toLocaleDateString('en-GB', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'short',
+            weekday: 'long', day: 'numeric', month: 'short',
+            timeZone: 'Europe/London',
           });
 
-          await sendPlainTextMessage(phone,
-            `Hi ${firstName}! 👋\n\n` +
-            `Your FLEX subscription will resume on ${resumeDateStr}. Your card will be charged then.\n\n` +
-            `Ready to get back to it? Reply RESUME to start early.\n\n` +
-            `Need more time? Reply PAUSE to extend your break.`
-          );
-
+          await sendPauseReminder(phone, { firstName, resumeDate: resumeDateStr });
           sent++;
         }
       } catch (err) {
@@ -87,12 +67,7 @@ export async function GET(request) {
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      processed: members.length,
-      sent,
-      errors,
-    });
+    return NextResponse.json({ success: true, processed: members.length, sent, errors });
   } catch (err) {
     console.error('Pause reminder cron error:', err);
     return NextResponse.json({ error: 'Cron job failed' }, { status: 500 });
