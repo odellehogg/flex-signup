@@ -10,7 +10,7 @@ import {
   sendManageMenu, sendBillingLink, sendMessage, sendError,
   sendPickupConfirmedThanks,
 } from '@/lib/whatsapp';
-import { sendSupportTicketEmail } from '@/lib/email';
+import { sendSupportTicketEmail, sendCustomerSupportConfirmationEmail } from '@/lib/email';
 import { COMPANY, CONVERSATION_STATES, matchesCommand } from '@/lib/constants';
 import { getDropsForPlan } from '@/lib/plans';
 
@@ -47,20 +47,21 @@ export async function POST(request) {
       return NextResponse.json({ status: 'unknown_user' });
     }
 
+    // Handle both string ("Active") and object ({name: "Active"}) formats from Airtable
     const subStatusRaw = member.fields['Subscription Status'];
     const subStatus = typeof subStatusRaw === 'object' ? subStatusRaw?.name : subStatusRaw;
 
-    // Cancelling = still within paid period, treat as Active
+    // Cancelling = still within their paid period, treat as Active
     if (subStatus !== 'Active' && subStatus !== 'Cancelling') {
       if (subStatus === 'Paused') {
         await sendSubscriptionPaused(phone);
       } else {
-        // Cancelled, Past Due, unknown
         await sendSubscriptionInactive(phone);
       }
       return NextResponse.json({ status: 'inactive_member' });
     }
 
+    // Handle both string and object formats for Conversation State
     const stateRaw = member.fields['Conversation State'];
     const state = (typeof stateRaw === 'object' ? stateRaw?.name : stateRaw) || CONVERSATION_STATES.IDLE;
     await handleMessage({ member, body, state, mediaUrls, phone });
@@ -99,12 +100,12 @@ async function handleMessage({ member, body, state, mediaUrls, phone }) {
 }
 
 async function handleIdleState(member, input, phone, firstName) {
-  // Core commands — text + template button payloads (see WHATSAPP_COMMANDS in constants.js)
+  // Core drop/status/support commands (text + template button payloads)
   if (matchesCommand(input, 'DROP')) { await startDropFlow(member, phone); return; }
   if (matchesCommand(input, 'STATUS')) { await showDropStatus(member, phone); return; }
   if (matchesCommand(input, 'SUPPORT')) { await startSupportFlow(member, phone); return; }
 
-  // Subscription management
+  // Subscription management — send portal link (no full sub management via WhatsApp yet)
   if (matchesCommand(input, 'SUBSCRIPTION') || matchesCommand(input, 'BILLING') ||
       matchesCommand(input, 'PAUSE') || matchesCommand(input, 'RESUME')) {
     const planName = member.fields['Subscription Tier'] || 'Essential';
@@ -113,7 +114,7 @@ async function handleIdleState(member, input, phone, firstName) {
     return;
   }
 
-  // Post-pickup feedback buttons (flex_pickup_confirmed_thanks: "Great" / "OK" / "Not Good")
+  // Post-pickup feedback buttons (from flex_pickup_confirmed_thanks: "Great" / "OK" / "Not Good")
   if (matchesCommand(input, 'FEEDBACK_GREAT')) {
     await sendMessage(phone,
       `Brilliant! Really glad to hear it. 😊\n\n` +
@@ -135,19 +136,19 @@ async function handleIdleState(member, input, phone, firstName) {
     return;
   }
 
-  // Pickup confirmed (flex_pickup_reminder / flex_pickup_confirm_request: "Yes, I've Collected")
+  // Pickup confirmed (from flex_pickup_reminder / flex_pickup_confirm_request: "Yes, I've Collected")
   if (matchesCommand(input, 'PICKUP_CONFIRMED')) {
     await sendPickupConfirmedThanks(phone);
     return;
   }
 
-  // Ready-notification response (flex_ready_pickup: "Got it")
+  // Ready-notification response (from flex_ready_pickup: "Got it")
   if (matchesCommand(input, 'ON_MY_WAY')) {
     await sendMessage(phone, `Great, see you soon! 👟\n\nJust ask reception for your FLEX bag.`);
     return;
   }
 
-  // Bag not yet collected (flex_pickup_confirm_request: "Not Yet")
+  // Bag not yet collected (from flex_pickup_confirm_request: "Not Yet")
   if (matchesCommand(input, 'NEED_MORE_TIME')) {
     await sendMessage(phone,
       `No problem! Your bag will be held at reception for 7 days.\n\n` +
@@ -156,7 +157,7 @@ async function handleIdleState(member, input, phone, firstName) {
     return;
   }
 
-  // Pause management buttons (flex_pause_reminder: "Keep Current" / "Extend pause")
+  // Pause management buttons (from flex_pause_reminder: "Keep Current" / "Extend pause")
   if (matchesCommand(input, 'KEEP_PAUSE')) {
     await sendMessage(phone,
       `All good — your subscription stays as is. ✅\n\n` +
@@ -173,7 +174,7 @@ async function handleIdleState(member, input, phone, firstName) {
     return;
   }
 
-  // Direct bag number entry: B042, 042, bag 42
+  // Allow direct bag number entry in various formats: B042, 042, bag 42
   const bagMatch = input.match(/^(?:BAG\s*#?\s*)?B?-?0*(\d{1,4})$/i);
   if (bagMatch) {
     const normalizedInput = `B${bagMatch[1].padStart(3, '0')}`;
@@ -183,7 +184,7 @@ async function handleIdleState(member, input, phone, firstName) {
     return;
   }
 
-  // Polite acknowledgements
+  // Polite acknowledgements — just show menu, don't say "I didn't catch that"
   const thankYouPatterns = /^(thanks?|thank\s*you|cheers|great|ok|okay|cool|got\s*it|perfect|ace|lovely|ta|nice|👍|👌|🙏|✅|😊)$/i;
   if (thankYouPatterns.test(input.trim())) {
     await sendMainMenu(phone, firstName);
@@ -262,13 +263,23 @@ async function handleAwaitingSupport(member, message, mediaUrls, phone) {
   const firstName = member.fields['First Name'] || 'Member';
   const lastName = member.fields['Last Name'] || '';
   const email = member.fields['Email'];
+
+  // Convert raw Twilio media URLs to our proxy endpoint so they're viewable
+  // in Airtable without needing Twilio Basic Auth credentials.
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.flexlaundry.co.uk';
+  const proxyUrls = mediaUrls.map(
+    (url) => `${baseUrl}/api/media/twilio?url=${encodeURIComponent(url)}`
+  );
+
   const issue = await createIssue({
     memberId: member.id,
     type: 'Other',
     description: message,
-    photoUrls: mediaUrls,
+    photoUrls: proxyUrls,
   });
   const ticketId = issue.id.slice(-6).toUpperCase();
+
+  // Send notification email to FLEX ops inbox
   try {
     await sendSupportTicketEmail({
       to: process.env.SUPPORT_EMAIL || 'support@flexlaundry.co.uk',
@@ -280,9 +291,29 @@ async function handleAwaitingSupport(member, message, mediaUrls, phone) {
       description: message,
       hasPhoto: mediaUrls.length > 0,
     });
+    console.log(`[WhatsApp] Ops support email sent for ticket #${ticketId}`);
   } catch (e) {
-    console.error('[WhatsApp] Support email failed:', e);
+    console.error('[WhatsApp] Ops support email failed:', e.message || e);
   }
+
+  // Send confirmation email to the customer
+  if (email) {
+    try {
+      await sendCustomerSupportConfirmationEmail({
+        to: email,
+        firstName,
+        ticketId,
+        description: message,
+        hasPhoto: mediaUrls.length > 0,
+      });
+      console.log(`[WhatsApp] Customer support confirmation email sent to ${email} for ticket #${ticketId}`);
+    } catch (e) {
+      console.error('[WhatsApp] Customer confirmation email failed:', e.message || e);
+    }
+  } else {
+    console.warn(`[WhatsApp] No email address on file for member ${member.id} — skipping customer confirmation email`);
+  }
+
   await updateMember(member.id, { 'Conversation State': CONVERSATION_STATES.IDLE });
   await sendSupportConfirmed(phone, { ticketId });
 }
