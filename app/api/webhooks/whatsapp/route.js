@@ -97,10 +97,13 @@ async function handleIdleState(member, input, phone, firstName) {
   if (matchesCommand(input, 'SUPPORT')) { await startSupportFlow(member, phone); return; }
 
   // Allow direct bag number entry in various formats: B042, 042, bag 42, B-042, bag#42
+  // Skip instructions — user already knows the process if they're entering a bag number directly
   const bagMatch = input.match(/^(?:BAG\s*#?\s*)?B?-?0*(\d{1,4})$/i);
   if (bagMatch) {
     const normalizedInput = `B${bagMatch[1].padStart(3, '0')}`;
-    await startDropFlow(member, phone);
+    // Check drops remaining before processing (without sending instructions)
+    const dropsRemaining = getMemberDropsRemaining(member.fields);
+    if (dropsRemaining <= 0) { await sendNoDropsRemaining(phone); return; }
     await handleAwaitingBag(member, normalizedInput, phone);
     return;
   }
