@@ -6,10 +6,11 @@ import {
 import {
   sendMainMenu, sendDropGuide, sendInvalidBagNumber, sendDropConfirmed,
   sendNoDropsRemaining, sendDropStatus, sendSupportPrompt, sendSupportConfirmed,
-  sendUnknownCommand, sendNotAMember, sendSubscriptionPaused, sendSubscriptionInactive, sendError,
+  sendUnknownCommand, sendNotAMember, sendSubscriptionPaused, sendSubscriptionInactive,
+  sendManageMenu, sendBillingLink, sendMessage, sendError,
 } from '@/lib/whatsapp';
 import { sendSupportTicketEmail } from '@/lib/email';
-import { CONVERSATION_STATES, matchesCommand } from '@/lib/constants';
+import { COMPANY, CONVERSATION_STATES, matchesCommand } from '@/lib/constants';
 import { getDropsForPlan } from '@/lib/plans';
 
 export async function GET(request) {
@@ -54,7 +55,6 @@ export async function POST(request) {
       if (subStatus === 'Paused') {
         await sendSubscriptionPaused(phone);
       } else {
-        // Cancelled, Past Due, unknown, or no status
         await sendSubscriptionInactive(phone);
       }
       return NextResponse.json({ status: 'inactive_member' });
@@ -75,6 +75,7 @@ async function handleMessage({ member, body, state, mediaUrls, phone }) {
   const input = body.toUpperCase().trim();
   const firstName = member.fields['First Name'] || 'there';
   try {
+    // MENU and CANCEL always reset to idle — works from any state
     if (matchesCommand(input, 'MENU') || matchesCommand(input, 'CANCEL')) {
       await updateMember(member.id, { 'Conversation State': CONVERSATION_STATES.IDLE });
       await sendMainMenu(phone, firstName);
@@ -98,31 +99,73 @@ async function handleMessage({ member, body, state, mediaUrls, phone }) {
 }
 
 async function handleIdleState(member, input, phone, firstName) {
-  // Handle standard commands
+  // Core drop/status/support commands (text + template button payloads)
   if (matchesCommand(input, 'DROP')) { await startDropFlow(member, phone); return; }
   if (matchesCommand(input, 'STATUS')) { await showDropStatus(member, phone); return; }
   if (matchesCommand(input, 'SUPPORT')) { await startSupportFlow(member, phone); return; }
 
-  // Allow direct bag number entry in various formats: B042, 042, bag 42, B-042, bag#42
-  // Skip instructions — user already knows the process if they're entering a bag number directly
+  // Subscription management — send portal link (no full sub management via WhatsApp yet)
+  if (matchesCommand(input, 'SUBSCRIPTION') || matchesCommand(input, 'BILLING') ||
+      matchesCommand(input, 'PAUSE') || matchesCommand(input, 'RESUME')) {
+    const planName = member.fields['Subscription Tier'] || 'Essential';
+    const status = member.fields['Subscription Status'] || 'Active';
+    await sendManageMenu(phone, planName, status);
+    return;
+  }
+
+  // Feedback from post-pickup template buttons — acknowledge and offer menu
+  if (matchesCommand(input, 'FEEDBACK_GREAT')) {
+    await sendMessage(phone,
+      `Brilliant! Really glad to hear it. 😊\n\n` +
+      `Your fresh gear awaits — see you next session! 💪\n\n` +
+      `Reply 1 to make your next drop.`
+    );
+    return;
+  }
+  if (matchesCommand(input, 'FEEDBACK_OK')) {
+    await sendMessage(phone,
+      `Thanks for letting us know. We're always looking to improve.\n\n` +
+      `If anything wasn't quite right, reply HELP and we'll look into it.`
+    );
+    return;
+  }
+  if (matchesCommand(input, 'FEEDBACK_BAD')) {
+    await updateMember(member.id, { 'Conversation State': CONVERSATION_STATES.AWAITING_SUPPORT });
+    await sendSupportPrompt(phone);
+    return;
+  }
+
+  // Ready-notification response buttons
+  if (matchesCommand(input, 'ON_MY_WAY')) {
+    await sendMessage(phone, `Great, see you soon! 👟\n\nJust ask reception for your FLEX bag.`);
+    return;
+  }
+  if (matchesCommand(input, 'NEED_MORE_TIME')) {
+    await sendMessage(phone,
+      `No problem! Your bag will be held at reception for 7 days.\n\n` +
+      `Reply STATUS anytime to check on your drop.`
+    );
+    return;
+  }
+
+  // Allow direct bag number entry in various formats: B042, 042, bag 42
   const bagMatch = input.match(/^(?:BAG\s*#?\s*)?B?-?0*(\d{1,4})$/i);
   if (bagMatch) {
     const normalizedInput = `B${bagMatch[1].padStart(3, '0')}`;
-    // Check drops remaining before processing (without sending instructions)
     const dropsRemaining = getMemberDropsRemaining(member.fields);
     if (dropsRemaining <= 0) { await sendNoDropsRemaining(phone); return; }
     await handleAwaitingBag(member, normalizedInput, phone);
     return;
   }
 
-  // Handle common responses that don't need "I didn't catch that"
+  // Polite acknowledgements — just show menu, don't say "I didn't catch that"
   const thankYouPatterns = /^(thanks?|thank\s*you|cheers|great|ok|okay|cool|got\s*it|perfect|ace|lovely|ta|nice|👍|👌|🙏|✅|😊)$/i;
   if (thankYouPatterns.test(input.trim())) {
     await sendMainMenu(phone, firstName);
     return;
   }
 
-  // Handle empty or emoji-only messages
+  // Empty or emoji-only messages
   if (!input || input.replace(/[\p{Emoji}\s]/gu, '').length === 0) {
     await sendMainMenu(phone, firstName);
     return;
@@ -132,7 +175,6 @@ async function handleIdleState(member, input, phone, firstName) {
 }
 
 async function startDropFlow(member, phone) {
-  // FIX: use getDropsRemaining helper (Drops Allowed - Drops Used)
   const dropsRemaining = getMemberDropsRemaining(member.fields);
   if (dropsRemaining <= 0) { await sendNoDropsRemaining(phone); return; }
   const gymId = member.fields['Gym']?.[0];
@@ -152,7 +194,6 @@ async function handleAwaitingBag(member, input, phone) {
     return;
   }
   const { bag, bagNumber } = validation;
-  // FIX: recompute remaining after validation
   const dropsRemaining = getMemberDropsRemaining(member.fields);
   if (dropsRemaining <= 0) {
     await sendNoDropsRemaining(phone);
@@ -171,7 +212,6 @@ async function handleAwaitingBag(member, input, phone) {
     weekday: 'long', day: 'numeric', month: 'short',
     timeZone: 'Europe/London',
   });
-  // Increment 'Drops Used' and reset conversation state
   const newDropsUsed = (member.fields['Drops Used'] || 0) + 1;
   const newDropsRemaining = Math.max(0, (member.fields['Drops Allowed'] || 0) - newDropsUsed);
   await updateMember(member.id, {
@@ -183,7 +223,6 @@ async function handleAwaitingBag(member, input, phone) {
 
 async function showDropStatus(member, phone) {
   const activeDrops = await getActiveDropsByMember(member);
-  // FIX: correct computation
   const dropsRemaining = getMemberDropsRemaining(member.fields);
   const dropsTotal = getDropsForPlan(member.fields['Subscription Tier'] || 'Essential');
   await sendDropStatus(phone, { activeDrops, dropsRemaining, dropsTotal });
