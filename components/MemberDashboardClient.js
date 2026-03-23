@@ -22,7 +22,12 @@ import {
 
 export default function MemberDashboardClient({ member, subscription, drops }) {
   const [billingLoading, setBillingLoading] = useState(false)
+  const [addonLoading, setAddonLoading] = useState(false)
   const [loggingOut, setLoggingOut] = useState(false)
+
+  // Show success banner if returning from addon checkout
+  const addonSuccess = typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('addon') === 'success'
 
   // Calculate drops info
   const dropsRemaining = member.dropsRemaining || 0
@@ -38,9 +43,32 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
     if (!plan) return 0
     const planLower = plan.toLowerCase()
     if (planLower.includes('unlimited')) return 16
-    if (planLower.includes('essential')) return 10
-    if (planLower.includes('single') || planLower.includes('one')) return 1
-    return 10
+    if (planLower.includes('essential')) return 12
+    if (planLower.includes('single') || planLower.includes('one') || planLower.includes('pay')) return 1
+    return 12
+  }
+
+  const isEssential = member.plan?.toLowerCase().includes('essential')
+
+  const handleAddonDrop = async () => {
+    setAddonLoading(true)
+    try {
+      const res = await fetch('/api/portal/addon-drop', {
+        method: 'POST',
+        credentials: 'include',
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert(data.error || 'Something went wrong. Please try again.')
+      }
+    } catch (error) {
+      console.error('Addon drop error:', error)
+      alert('Something went wrong. Please try again.')
+    } finally {
+      setAddonLoading(false)
+    }
   }
 
   const handleManageBilling = async () => {
@@ -110,6 +138,15 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
   return (
     <div className="min-h-screen bg-warm-white">
       <div className="max-w-4xl mx-auto px-4 py-8">
+
+        {/* Addon success banner */}
+        {addonSuccess && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-6 flex items-center space-x-3">
+            <CheckCircle className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+            <p className="text-emerald-800 font-medium">Extra drop added! Your drops have been updated. 🎉</p>
+          </div>
+        )}
+
         {/* Welcome Header */}
         <div className="bg-gradient-to-r from-flex-navy to-[#2a2a2a] text-white rounded-2xl p-6 mb-6">
           <div className="flex items-center justify-between">
@@ -310,6 +347,25 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
                 </div>
                 <ChevronRight className="w-5 h-5 text-amber-600" />
               </a>
+
+              {isEssential && (
+                <button
+                  onClick={handleAddonDrop}
+                  disabled={addonLoading}
+                  className="w-full flex items-center justify-between p-4 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors disabled:opacity-60"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 bg-emerald-100 rounded-full flex items-center justify-center">
+                      <Package className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div className="text-left">
+                      <span className="font-medium text-emerald-800 block">Buy Extra Drop</span>
+                      <span className="text-xs text-emerald-600">£4 · added instantly</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-emerald-600" />
+                </button>
+              )}
             </div>
           </div>
         </div>
