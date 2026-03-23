@@ -9,7 +9,7 @@
 
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createMember, getMemberByStripeCustomerId, updateMember } from '@/lib/airtable';
+import { createMember, getMemberById, getMemberByStripeCustomerId, updateMember } from '@/lib/airtable';
 import { getPlan, getDropsForPlan } from '@/lib/plans';
 import { sendWelcome } from '@/lib/whatsapp';
 import { sendWelcomeEmail } from '@/lib/email';
@@ -72,10 +72,18 @@ export async function POST(request) {
 async function handleCheckoutCompleted(session) {
   console.log('[Stripe] checkout.session.completed:', session.id);
 
+  const metadata = session.metadata || {};
+
+  // ── Addon drop purchase ──────────────────────────────────────────────────
+  if (metadata.type === 'addon_drop') {
+    await handleAddonDropCompleted(session);
+    return;
+  }
+
+  // ── New subscription signup ──────────────────────────────────────────────
   const customerId = session.customer;
   const subscriptionId = session.subscription;
   const email = session.customer_email || session.customer_details?.email;
-  const metadata = session.metadata || {};
   const { planId, planName, gymCode, gymId, firstName = '', lastName = '', phone } = metadata;
 
   if (!phone) { console.error('[Stripe] No phone in metadata'); return; }
@@ -118,6 +126,34 @@ async function handleCheckoutCompleted(session) {
     }
   } catch (err) {
     console.error('[Stripe] Member creation failed:', err);
+  }
+}
+
+// ============================================================================
+// ADDON DROP COMPLETED → Increment Drops Allowed by 1 + notify member
+// ============================================================================
+async function handleAddonDropCompleted(session) {
+  const { memberId, phone, firstName = 'there' } = session.metadata || {};
+  if (!memberId) { console.error('[Stripe] Addon drop: no memberId in metadata'); return; }
+
+  try {
+    const member = await getMemberById(memberId);
+    if (!member) { console.error('[Stripe] Addon drop: member not found:', memberId); return; }
+
+    const currentAllowed = member.fields['Drops Allowed'] || 0;
+    await updateMember(memberId, { 'Drops Allowed': currentAllowed + 1 });
+    console.log(`[Stripe] Addon drop: incremented Drops Allowed for ${memberId} to ${currentAllowed + 1}`);
+
+    if (phone) {
+      const { sendPlainTextMessage } = await import('@/lib/whatsapp');
+      await sendPlainTextMessage(phone,
+        `Your extra drop has been added, ${firstName}! 🎉\n\n` +
+        `You now have ${currentAllowed + 1 - (member.fields['Drops Used'] || 0)} drop(s) remaining this month.\n\n` +
+        `Ready to use it? Reply 1 or type DROP.`
+      ).catch(e => console.error('[Stripe] Addon WhatsApp notify failed:', e));
+    }
+  } catch (err) {
+    console.error('[Stripe] handleAddonDropCompleted error:', err);
   }
 }
 
