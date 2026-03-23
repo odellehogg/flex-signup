@@ -138,13 +138,22 @@ export default function HomePage() {
                   <h3 className="text-xl font-bold text-flex-navy mb-2">{plan.name}</h3>
                   <p className="text-gray-500 text-sm">{plan.description}</p>
                 </div>
-                <div className="text-center mb-6">
-                  <span className="text-4xl font-bold text-flex-navy">£{plan.price}</span>
-                  <span className="text-gray-500">{plan.isSubscription ? '/month' : '/drop'}</span>
+                <div className="text-center mb-3">
+                  <span className="text-4xl font-bold text-flex-navy">£{plan.pricePerDrop ?? plan.price}</span>
+                  <span className="text-gray-500 text-lg">/drop</span>
                 </div>
-                <div className="text-center mb-6 text-flex-navy font-semibold">
-                  {plan.drops === 1 ? 'Pay as you go' : `${plan.drops} drops per month`}
-                </div>
+                {plan.billingNote ? (
+                  <div className="flex justify-center mb-5">
+                    <span className="inline-flex flex-col items-center bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold px-4 py-2 rounded-full leading-relaxed">
+                      <span>{plan.billingNote}</span>
+                      {plan.addonNote && (
+                        <span className="font-normal text-emerald-600 mt-0.5">{plan.addonNote}</span>
+                      )}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mb-5" />
+                )}
                 <Link 
                   href={`/join?plan=${plan.id}`} 
                   className={`block text-center ${plan.isPopular ? 'btn-accent' : 'btn-primary'}`}
