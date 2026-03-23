@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-const STATUSES = ['Dropped', 'In Transit', 'At Laundry', 'Ready', 'Collected'];
+const STATUSES = ['Dropped', 'In Transit', 'At Laundry', 'Ready', 'Collected', 'Processing'];
 
 function DropsContent() {
   const searchParams = useSearchParams();
@@ -63,13 +63,16 @@ function DropsContent() {
       'At Laundry': 'badge-laundry',
       'Ready': 'badge-ready',
       'Collected': 'badge-collected',
+      'Processing': 'bg-blue-100 text-blue-800',
     };
     return classes[status] || 'bg-gray-100 text-gray-800';
   }
 
   function getNextStatus(currentStatus) {
-    const index = STATUSES.indexOf(currentStatus);
-    return index < STATUSES.length - 1 ? STATUSES[index + 1] : null;
+    if (currentStatus === 'Processing') return 'In Transit';
+    const flow = ['Dropped', 'In Transit', 'At Laundry', 'Ready', 'Collected'];
+    const index = flow.indexOf(currentStatus);
+    return index >= 0 && index < flow.length - 1 ? flow[index + 1] : null;
   }
 
   return (

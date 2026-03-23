@@ -5,6 +5,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { 
   User, 
   MapPin, 
@@ -218,18 +219,18 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
               <MapPin className="w-5 h-5 text-flex-navy" />
             </div>
             <p className="text-lg font-bold text-flex-navy">{member.gym || 'Not set'}</p>
-            <a
-              href="https://wa.me/447366907286?text=CHANGE_GYM"
+            <Link
+              href="/portal/help?topic=change-gym"
               className="mt-3 text-sm text-flex-accent hover:text-emerald-700 flex items-center"
             >
               Change gym <ChevronRight className="w-4 h-4 ml-1" />
-            </a>
+            </Link>
           </div>
         </div>
 
         {/* Active Drop */}
         {activeDrop && (
-          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-6 mb-6">
+          <div id="active-drop" className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-xl p-6 mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
                 <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center">
@@ -281,12 +282,12 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
               <div className="text-center py-8 text-gray-500">
                 <Package className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                 <p>No drops yet</p>
-                <a
-                  href="https://wa.me/447366907286?text=DROP"
+                <Link
+                  href="/portal/drop"
                   className="inline-flex items-center mt-4 text-flex-accent hover:text-emerald-700"
                 >
                   Start a drop <ChevronRight className="w-4 h-4 ml-1" />
-                </a>
+                </Link>
               </div>
             )}
           </div>
@@ -296,8 +297,8 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
             <h2 className="font-semibold text-gray-900 mb-4">Quick Actions</h2>
             
             <div className="space-y-3">
-              <a
-                href="https://wa.me/447366907286?text=DROP"
+              <Link
+                href="/portal/drop"
                 className="flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-lg transition-colors"
               >
                 <div className="flex items-center space-x-3">
@@ -307,11 +308,11 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
                   <span className="font-medium text-green-800">New Drop</span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-green-600" />
-              </a>
+              </Link>
 
-              <a
-                href="https://wa.me/447366907286?text=TRACK"
-                className="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+              <button
+                onClick={() => { const el = document.getElementById('active-drop'); if (el) el.scrollIntoView({ behavior: 'smooth' }); else alert('No active drops to track right now.'); }}
+                className="w-full flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
               >
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
@@ -320,11 +321,12 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
                   <span className="font-medium text-blue-800">Track My Bag</span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-blue-600" />
-              </a>
+              </button>
 
-              <a
-                href="https://wa.me/447366907286?text=MANAGE"
-                className="flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors"
+              <button
+                onClick={handleManageBilling}
+                disabled={billingLoading}
+                className="w-full flex items-center justify-between p-4 bg-purple-50 hover:bg-purple-100 rounded-lg transition-colors disabled:opacity-60"
               >
                 <div className="flex items-center space-x-3">
                   <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
@@ -333,10 +335,10 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
                   <span className="font-medium text-purple-800">Manage Subscription</span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-purple-600" />
-              </a>
+              </button>
 
-              <a
-                href="https://wa.me/447366907286?text=HELP"
+              <Link
+                href="/portal/help"
                 className="flex items-center justify-between p-4 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
               >
                 <div className="flex items-center space-x-3">
@@ -346,7 +348,7 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
                   <span className="font-medium text-amber-800">Get Help</span>
                 </div>
                 <ChevronRight className="w-5 h-5 text-amber-600" />
-              </a>
+              </Link>
 
               {isEssential && (
                 <button
@@ -414,12 +416,12 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
               <ExternalLink className="w-4 h-4 mr-2" />
               {billingLoading ? 'Loading...' : 'Manage billing & invoices'}
             </button>
-            <a
-              href="https://wa.me/447366907286?text=MY_ACCOUNT"
+            <Link
+              href="/portal/help?topic=update-details"
               className="text-sm text-gray-500 hover:text-gray-700"
             >
-              Update details via WhatsApp
-            </a>
+              Update details
+            </Link>
           </div>
         </div>
       </div>

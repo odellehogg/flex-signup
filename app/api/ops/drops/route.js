@@ -48,9 +48,9 @@ export async function GET(request) {
       status: r.fields['Status'],
       dropDate: r.fields['Drop Date'],
       availableUntil: r.fields['Available Until'],
-      memberName: r.fields['Member Name'],
-      memberPhone: r.fields['Member Phone'],
-      gym: r.fields['Gym Name'],
+      memberName: r.fields['Member Name']?.[0] || '',
+      memberPhone: r.fields['Member Phone']?.[0] || '',
+      gym: r.fields['Gym Name']?.[0] || '',
       createdAt: r.createdTime,
     }));
 

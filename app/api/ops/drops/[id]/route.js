@@ -13,7 +13,7 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ error: 'Status required' }, { status: 400 });
     }
 
-    const validStatuses = ['Dropped', 'In Transit', 'At Laundry', 'Ready', 'Collected'];
+    const validStatuses = ['Dropped', 'Processing', 'In Transit', 'At Laundry', 'Ready', 'Collected'];
     if (!validStatuses.includes(status)) {
       return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
     }
@@ -26,11 +26,11 @@ export async function PUT(request, { params }) {
 
     // Send notification if ready
     if (status === 'Ready') {
-      const memberPhone = drop.fields['Member Phone'];
-      const memberEmail = drop.fields['Member Email'];
-      const memberName = drop.fields['Member Name'];
+      const memberPhone = drop.fields['Member Phone']?.[0];
+      const memberEmail = drop.fields['Member Email']?.[0];
+      const memberName = drop.fields['Member Name']?.[0];
       const bagNumber = drop.fields['Bag Number'];
-      const gymName = drop.fields['Gym Name'] || 'your gym';
+      const gymName = drop.fields['Gym Name']?.[0] || 'your gym';
 
       // Calculate pickup deadline (7 days)
       const pickupDeadline = new Date();
