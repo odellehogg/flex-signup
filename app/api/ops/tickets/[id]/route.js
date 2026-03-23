@@ -3,7 +3,7 @@ import { updateIssue } from '@/lib/airtable';
 
 export async function PUT(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const updates = await request.json();
 
     const allowedFields = ['Status', 'Priority', 'Resolution', 'Notes'];

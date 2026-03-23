@@ -6,7 +6,7 @@ import { logDropStatusChange } from '@/lib/audit';
 
 export async function PUT(request, { params }) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const { status } = await request.json();
 
     if (!status) {

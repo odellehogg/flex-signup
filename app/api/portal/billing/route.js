@@ -25,14 +25,15 @@ export async function POST() {
       return NextResponse.json({ error: 'No billing account found' }, { status: 400 });
     }
 
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://www.flexlaundry.co.uk';
     const session = await stripe.billingPortal.sessions.create({
       customer: stripeCustomerId,
-      return_url: `${process.env.NEXT_PUBLIC_URL}/portal`,
+      return_url: `${baseUrl}/portal`,
     });
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
-    console.error('[Portal /billing] Error:', err);
+    console.error('[Portal /billing] Error:', err.message, err.stack);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }

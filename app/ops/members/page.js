@@ -7,13 +7,17 @@ export default function OpsMembersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [messageTarget, setMessageTarget] = useState(null);
+  const [messageText, setMessageText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState(null);
 
   const fetchMembers = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
       if (statusFilter) params.set('status', statusFilter);
-      
+
       const res = await fetch(`/api/ops/members?${params}`);
       const data = await res.json();
       setMembers(data.members || []);
@@ -38,6 +42,31 @@ export default function OpsMembersPage() {
       m.phone?.includes(search)
     );
   });
+
+  async function handleSendMessage(e) {
+    e.preventDefault();
+    if (!messageTarget || !messageText.trim()) return;
+    setSending(true);
+    setSendResult(null);
+    try {
+      const res = await fetch('/api/ops/message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: messageTarget.phone, message: messageText }),
+      });
+      if (res.ok) {
+        setSendResult('sent');
+        setMessageText('');
+        setTimeout(() => { setMessageTarget(null); setSendResult(null); }, 2000);
+      } else {
+        setSendResult('error');
+      }
+    } catch {
+      setSendResult('error');
+    } finally {
+      setSending(false);
+    }
+  }
 
   return (
     <div>
@@ -91,6 +120,7 @@ export default function OpsMembersPage() {
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Drops</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Status</th>
                 <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Gym</th>
+                <th className="text-left py-3 px-4 text-sm font-medium text-gray-500">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -123,12 +153,71 @@ export default function OpsMembersPage() {
                   <td className="py-3 px-4">
                     <span className="text-sm text-gray-600">{member.gym || '-'}</span>
                   </td>
+                  <td className="py-3 px-4">
+                    {member.phone && (
+                      <button
+                        onClick={() => { setMessageTarget(member); setMessageText(''); setSendResult(null); }}
+                        className="text-sm text-green-600 hover:text-green-700 font-medium"
+                      >
+                        Message
+                      </button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         )}
       </div>
+
+      {/* Message Modal */}
+      {messageTarget && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-lg w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h2 className="text-lg font-bold">Message on WhatsApp</h2>
+                  <p className="text-sm text-gray-500">{messageTarget.firstName} {messageTarget.lastName} &middot; {messageTarget.phone}</p>
+                </div>
+                <button onClick={() => setMessageTarget(null)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+              </div>
+
+              {sendResult === 'sent' ? (
+                <div className="bg-green-50 border border-green-200 text-green-700 rounded-lg p-4 text-center">
+                  Message sent!
+                </div>
+              ) : (
+                <form onSubmit={handleSendMessage}>
+                  <textarea
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    placeholder="Type your message..."
+                    rows={4}
+                    required
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-4 resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                  />
+                  {sendResult === 'error' && (
+                    <p className="text-red-600 text-sm mb-3">Failed to send. Please try again.</p>
+                  )}
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      disabled={sending || !messageText.trim()}
+                      className="btn-primary flex-1 disabled:opacity-50"
+                    >
+                      {sending ? 'Sending...' : 'Send Message'}
+                    </button>
+                    <button type="button" onClick={() => setMessageTarget(null)} className="btn-secondary">
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

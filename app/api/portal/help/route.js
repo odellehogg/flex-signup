@@ -24,8 +24,9 @@ export async function POST(request) {
 
     await createIssue({
       memberId: member.id,
-      type: 'Support Request',
+      type: 'Other',
       description: `Topic: ${topic}\n\n${message}`,
+      source: 'Email',
     });
 
     return NextResponse.json({ success: true, message: 'Support request submitted' });

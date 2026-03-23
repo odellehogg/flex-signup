@@ -42,9 +42,10 @@ export async function GET(request) {
       description: r.fields['Description'],
       status: r.fields['Status'],
       priority: r.fields['Priority'] || 'Normal',
-      memberName: r.fields['Member Name'],
-      memberPhone: r.fields['Member Phone'],
+      memberName: r.fields['Member Name']?.[0] || '',
+      memberPhone: r.fields['Member Phone']?.[0] || '',
       photoUrl: r.fields['Photo URL'],
+      internalNotes: r.fields['Internal Notes'] || '',
       createdAt: r.createdTime,
     }));
 

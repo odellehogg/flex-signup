@@ -41,6 +41,7 @@ export async function POST() {
 
     const stripeCustomerId = member.fields['Stripe Customer ID'];
     const addonPlan = PLANS['Addon Drop'];
+    const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://www.flexlaundry.co.uk';
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -58,13 +59,13 @@ export async function POST() {
         phone: member.fields['Phone'] || '',
         firstName: member.fields['First Name'] || '',
       },
-      success_url: `${process.env.NEXT_PUBLIC_URL}/portal?addon=success`,
-      cancel_url: `${process.env.NEXT_PUBLIC_URL}/portal`,
+      success_url: `${baseUrl}/portal?addon=success`,
+      cancel_url: `${baseUrl}/portal`,
     });
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
-    console.error('[Portal /addon-drop] Error:', err);
+    console.error('[Portal /addon-drop] Error:', err.message, err.stack);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 }
