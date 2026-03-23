@@ -151,12 +151,10 @@ async function handleAddonDropCompleted(session) {
     console.log(`[Stripe] Addon drop: incremented Drops Allowed for ${memberId} to ${currentAllowed + 1}`);
 
     if (phone) {
-      const { sendPlainTextMessage } = await import('@/lib/whatsapp');
-      await sendPlainTextMessage(phone,
-        `Your extra drop has been added, ${firstName}! 🎉\n\n` +
-        `You now have ${currentAllowed + 1 - (member.fields['Drops Used'] || 0)} drop(s) remaining this month.\n\n` +
-        `Ready to use it? Reply 1 or type DROP.`
-      ).catch(e => console.error('[Stripe] Addon WhatsApp notify failed:', e));
+      const dropsRemaining = currentAllowed + 1 - (member.fields['Drops Used'] || 0);
+      const { sendAddonConfirmed } = await import('@/lib/whatsapp');
+      await sendAddonConfirmed(phone, { firstName, dropsRemaining })
+        .catch(e => console.error('[Stripe] Addon WhatsApp notify failed:', e));
     }
   } catch (err) {
     console.error('[Stripe] handleAddonDropCompleted error:', err);
@@ -187,10 +185,9 @@ async function handlePaymentSucceeded(invoice) {
     const phone = member.fields['Phone'];
     const firstName = member.fields['First Name'] || 'there';
     if (phone) {
-      const { sendPlainTextMessage } = await import('@/lib/whatsapp');
-      await sendPlainTextMessage(phone,
-        `Hey ${firstName}! Your ${dropsAllowed} drops have been refreshed for this month. 🎉\n\nReady to make a drop? Reply 1 or text DROP!`
-      ).catch(e => console.error('[Stripe] Drop reset notification failed:', e));
+      const { sendDropsReset } = await import('@/lib/whatsapp');
+      await sendDropsReset(phone, { firstName, dropsAllowed })
+        .catch(e => console.error('[Stripe] Drop reset notification failed:', e));
     }
   }
 }
@@ -207,10 +204,9 @@ async function handlePaymentFailed(invoice) {
   const firstName = member.fields['First Name'] || 'there';
 
   if (phone) {
-    const { sendPlainTextMessage } = await import('@/lib/whatsapp');
-    await sendPlainTextMessage(phone,
-      `Hi ${firstName}, your FLEX payment failed. Update your payment method to keep your subscription:\n\nhttps://flexlaundry.co.uk/portal`
-    ).catch(e => console.error('[Stripe] Payment failed message error:', e));
+    const { sendPaymentFailed } = await import('@/lib/whatsapp');
+    await sendPaymentFailed(phone, { firstName })
+      .catch(e => console.error('[Stripe] Payment failed message error:', e));
   }
 }
 
@@ -248,9 +244,8 @@ async function handleSubscriptionDeleted(subscription) {
   const firstName = member.fields['First Name'] || 'there';
 
   if (phone) {
-    const { sendPlainTextMessage } = await import('@/lib/whatsapp');
-    await sendPlainTextMessage(phone,
-      `Hi ${firstName}, your FLEX subscription has ended. Hope to see you again!\n\nRejoin at https://flexlaundry.co.uk`
-    ).catch(e => console.error('[Stripe] Cancellation message error:', e));
+    const { sendSubCancelled } = await import('@/lib/whatsapp');
+    await sendSubCancelled(phone, { firstName })
+      .catch(e => console.error('[Stripe] Cancellation message error:', e));
   }
 }

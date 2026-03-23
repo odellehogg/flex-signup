@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import {
-  getMemberByPhone, updateMember, createDrop, getActiveDropsByMember,
+  getMemberByPhone, updateMember, createDrop, getActiveDropsByMember, updateDropStatus,
   validateBag, createIssue, normalizePhone, getGymById, getMemberDropsRemaining,
 } from '@/lib/airtable';
 import {
@@ -89,6 +89,9 @@ async function handleMessage({ member, body, state, mediaUrls, phone }) {
       case CONVERSATION_STATES.AWAITING_SUPPORT:
         await handleAwaitingSupport(member, body, mediaUrls, phone);
         break;
+      case CONVERSATION_STATES.AWAITING_CONFIRM:
+        await handleAwaitingConfirm(member, input, phone);
+        break;
       default:
         await handleIdleState(member, input, phone, firstName);
     }
@@ -144,6 +147,11 @@ async function handleIdleState(member, input, phone, firstName) {
 
   // Pickup confirmed (from flex_pickup_reminder / flex_pickup_confirm_request: "Yes, I've Collected")
   if (matchesCommand(input, 'PICKUP_CONFIRMED')) {
+    const activeDrops = await getActiveDropsByMember(member);
+    const readyDrop = activeDrops.find(d => d.fields['Status'] === 'Ready');
+    if (readyDrop) {
+      await updateDropStatus(readyDrop.id, 'Collected');
+    }
     await sendPickupConfirmedThanks(phone);
     return;
   }
@@ -203,7 +211,7 @@ async function handleIdleState(member, input, phone, firstName) {
     return;
   }
 
-  await sendUnknownCommand(phone, firstName);
+  await sendMainMenu(phone, firstName);
 }
 
 async function startDropFlow(member, phone) {
@@ -225,7 +233,7 @@ async function handleAwaitingBag(member, input, phone) {
     await sendInvalidBagNumber(phone, input, validation.error);
     return;
   }
-  const { bag, bagNumber } = validation;
+  const { bagNumber } = validation;
   const dropsRemaining = getMemberDropsRemaining(member.fields);
   if (dropsRemaining <= 0) {
     await sendNoDropsRemaining(phone);
@@ -238,11 +246,71 @@ async function handleAwaitingBag(member, input, phone) {
     const g = await getGymById(gymId).catch(() => null);
     gymName = g?.fields?.Name || 'your gym';
   }
+  await updateMember(member.id, {
+    'Conversation State': CONVERSATION_STATES.AWAITING_CONFIRM,
+    'Pending Bag Number': bagNumber,
+  });
+  await sendMessage(phone,
+    `Confirm drop for bag *${bagNumber}* at *${gymName}*?\n\n` +
+    `Reply *YES* to confirm or *NO* to cancel.`
+  );
+}
+
+async function handleAwaitingConfirm(member, input, phone) {
+  if (matchesCommand(input, 'NO')) {
+    await updateMember(member.id, {
+      'Conversation State': CONVERSATION_STATES.IDLE,
+      'Pending Bag Number': '',
+    });
+    await sendMainMenu(phone, member.fields['First Name'] || 'there');
+    return;
+  }
+  if (!matchesCommand(input, 'YES')) {
+    await sendMessage(phone, 'Reply *YES* to confirm or *NO* to cancel.');
+    return;
+  }
+
+  const bagNumber = member.fields['Pending Bag Number'];
+  if (!bagNumber) {
+    await updateMember(member.id, { 'Conversation State': CONVERSATION_STATES.IDLE });
+    await sendError(phone);
+    return;
+  }
+
+  // Re-validate bag is still available
+  const validation = await validateBag(bagNumber);
+  if (!validation.valid) {
+    await updateMember(member.id, {
+      'Conversation State': CONVERSATION_STATES.IDLE,
+      'Pending Bag Number': '',
+    });
+    await sendInvalidBagNumber(phone, bagNumber, validation.error);
+    return;
+  }
+
+  const { bag } = validation;
+  const dropsRemaining = getMemberDropsRemaining(member.fields);
+  if (dropsRemaining <= 0) {
+    await sendNoDropsRemaining(phone);
+    await updateMember(member.id, {
+      'Conversation State': CONVERSATION_STATES.IDLE,
+      'Pending Bag Number': '',
+    });
+    return;
+  }
+
+  const gymId = member.fields['Gym']?.[0];
+  let gymName = 'your gym';
+  if (gymId) {
+    const g = await getGymById(gymId).catch(() => null);
+    gymName = g?.fields?.Name || 'your gym';
+  }
+
   let drop;
   try {
     drop = await createDrop({ memberId: member.id, bagId: bag.id, bagNumber, gymId });
   } catch (err) {
-    console.error('[WhatsApp] createDrop failed, not incrementing Drops Used:', err);
+    console.error('[WhatsApp] createDrop failed:', err);
     throw err;
   }
 
@@ -252,9 +320,10 @@ async function handleAwaitingBag(member, input, phone) {
     await updateMember(member.id, {
       'Drops Used': newDropsUsed,
       'Conversation State': CONVERSATION_STATES.IDLE,
+      'Pending Bag Number': '',
     });
   } catch (err) {
-    console.error(`[WhatsApp] CRITICAL: Drop ${drop.id} created but Drops Used failed to update for member ${member.id}:`, err);
+    console.error(`[WhatsApp] CRITICAL: Drop ${drop.id} created but Drops Used failed for member ${member.id}:`, err);
     throw err;
   }
 
@@ -271,12 +340,9 @@ async function handleAwaitingBag(member, input, phone) {
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const daysLeft = daysInMonth - now.getDate();
     if (daysLeft > 7) {
-      const plural = newDropsRemaining === 1 ? 'drop' : 'drops';
-      await sendMessage(phone,
-        `Heads up — you have *${newDropsRemaining} ${plural}* left this month with *${daysLeft} days* still to go. 💚\n\n` +
-        `Need more? Add an extra drop for *£4* anytime:\n${COMPANY.website}/portal\n\n` +
-        `Or reply *EXTRA DROP* and we'll send you a payment link straight away.`
-      ).catch(e => console.error('[WhatsApp] Low-drop nudge failed:', e));
+      const { sendLowDrops } = await import('@/lib/whatsapp');
+      await sendLowDrops(phone, { firstName: member.fields['First Name'] || 'there', dropsRemaining: newDropsRemaining, daysLeft })
+        .catch(e => console.error('[WhatsApp] Low-drop nudge failed:', e));
     }
   }
 }

@@ -19,7 +19,7 @@ const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
 function verifyCronSecret(request) {
   const authHeader = request.headers.get('authorization');
   const expectedSecret = process.env.CRON_SECRET;
-  if (!expectedSecret) return true;
+  if (!expectedSecret) return false;
   return authHeader === `Bearer ${expectedSecret}`;
 }
 
@@ -66,7 +66,7 @@ export async function GET(request) {
     const { records } = await res.json();
     console.log(`[low-drops cron] Found ${records.length} members with 1 drop left (${daysLeft} days remaining)`);
 
-    const { sendPlainTextMessage } = await import('@/lib/whatsapp');
+    const { sendLowDrops } = await import('@/lib/whatsapp');
     let sent = 0;
     let failed = 0;
 
@@ -76,11 +76,7 @@ export async function GET(request) {
       if (!phone) continue;
 
       try {
-        await sendPlainTextMessage(phone,
-          `Hey ${firstName} — just a reminder that you have *1 drop left* this month with *${daysLeft} days* still to go. 💚\n\n` +
-          `Top up with an extra drop for *£4* anytime:\n${COMPANY.website}/portal\n\n` +
-          `Or reply *EXTRA DROP* and we'll send you a payment link.`
-        );
+        await sendLowDrops(phone, { firstName, dropsRemaining: 1, daysLeft });
         sent++;
       } catch (e) {
         console.error(`[low-drops cron] Failed to notify ${phone}:`, e);
