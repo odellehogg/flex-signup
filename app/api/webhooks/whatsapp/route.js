@@ -251,6 +251,21 @@ async function handleAwaitingBag(member, input, phone) {
     'Conversation State': CONVERSATION_STATES.IDLE,
   });
   await sendDropConfirmed(phone, { bagNumber, gymName, expectedDate, dropsRemaining: newDropsRemaining });
+
+  // Low-drop nudge: ≤2 drops left AND >7 days remain in the month
+  if (newDropsRemaining <= 2 && newDropsRemaining > 0) {
+    const now = new Date();
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const daysLeft = daysInMonth - now.getDate();
+    if (daysLeft > 7) {
+      const plural = newDropsRemaining === 1 ? 'drop' : 'drops';
+      await sendMessage(phone,
+        `Heads up — you have *${newDropsRemaining} ${plural}* left this month with *${daysLeft} days* still to go. 💚\n\n` +
+        `Need more? Add an extra drop for *£4* anytime:\n${COMPANY.website}/portal\n\n` +
+        `Or reply *EXTRA DROP* and we'll send you a payment link straight away.`
+      ).catch(e => console.error('[WhatsApp] Low-drop nudge failed:', e));
+    }
+  }
 }
 
 async function showDropStatus(member, phone) {
