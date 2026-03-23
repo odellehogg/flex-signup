@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getIssueById, updateIssue } from '@/lib/airtable';
+import { getIssueById, updateIssue, getMemberById } from '@/lib/airtable';
 import { sendMessage } from '@/lib/whatsapp';
+import { sendTicketReplyEmail } from '@/lib/email';
 
 export async function POST(request, { params }) {
   try {
@@ -22,20 +23,54 @@ export async function POST(request, { params }) {
     const newNote = `[${now}] FLEX: ${message}`;
     const updatedNotes = existingNotes ? `${existingNotes}\n${newNote}` : newNote;
 
-    const updates = { 'Internal Notes': updatedNotes };
-    if (newStatus) updates['Status'] = newStatus;
+    // Auto-set status to "Waiting on Customer" unless explicitly overridden
+    const resolvedStatus = newStatus || 'Waiting on Customer';
 
-    await updateIssue(id, updates);
+    await updateIssue(id, {
+      'Internal Notes': updatedNotes,
+      'Status': resolvedStatus,
+    });
 
-    // Send WhatsApp notification to the member
-    const memberPhone = ticket.fields['Member Phone']?.[0] || ticket.fields['Phone'];
-    if (memberPhone) {
+    // Get the linked member for email and phone
+    const memberId = ticket.fields['Member']?.[0];
+    let memberEmail = null;
+    let memberPhone = null;
+    let firstName = 'there';
+    if (memberId) {
+      const member = await getMemberById(memberId);
+      if (member) {
+        memberEmail = member.fields['Email'];
+        memberPhone = member.fields['Phone'];
+        firstName = member.fields['First Name'] || 'there';
+      }
+    }
+
+    // Generate ticket ID
+    const ticketId = id.slice(-5).toUpperCase();
+
+    // Send email reply to the member
+    if (memberEmail) {
+      try {
+        await sendTicketReplyEmail({
+          to: memberEmail,
+          firstName,
+          ticketId,
+          replyMessage: message,
+          conversationHistory: existingNotes,
+        });
+      } catch (err) {
+        console.error('[Ops /tickets/reply] Email send failed:', err.message);
+      }
+    }
+
+    // WhatsApp nudge only when status changes to "Waiting on Customer"
+    if (resolvedStatus === 'Waiting on Customer' && memberPhone) {
       try {
         await sendMessage(memberPhone,
-          `You have a new update on your FLEX support ticket:\n\n${message}\n\nReply HELP to continue the conversation.`
+          `Hi ${firstName}, your FLEX support ticket #${ticketId} has been updated. Please check your email for details. Reply HELP if you need anything.`
         );
       } catch (err) {
-        console.error('[Ops /tickets/reply] WhatsApp send failed:', err.message);
+        console.error('[Ops /tickets/reply] WhatsApp nudge failed:', err.message);
       }
     }
 

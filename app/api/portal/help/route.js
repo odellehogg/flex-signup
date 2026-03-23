@@ -3,7 +3,8 @@ export const dynamic = 'force-dynamic';
 import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
-import { getMemberById, createIssue } from '@/lib/airtable';
+import { getMemberById, createIssue, updateIssue } from '@/lib/airtable';
+import { sendCustomerSupportConfirmationEmail } from '@/lib/email';
 
 export async function POST(request) {
   try {
@@ -22,14 +23,40 @@ export async function POST(request) {
       return NextResponse.json({ error: 'Topic and message are required' }, { status: 400 });
     }
 
-    await createIssue({
+    const issue = await createIssue({
       memberId: member.id,
       type: 'Other',
       description: `Topic: ${topic}\n\n${message}`,
       source: 'Email',
     });
 
-    return NextResponse.json({ success: true, message: 'Support request submitted' });
+    // Generate short ticket ID from Airtable record ID
+    const ticketId = issue.id.slice(-5).toUpperCase();
+
+    // Set ticket ID on the record
+    try {
+      await updateIssue(issue.id, { 'Ticket ID': ticketId });
+    } catch (err) {
+      console.error('[Portal /help] Failed to set Ticket ID:', err.message);
+    }
+
+    // Send confirmation email
+    const email = member.fields['Email'];
+    const firstName = member.fields['First Name'] || 'there';
+    if (email) {
+      try {
+        await sendCustomerSupportConfirmationEmail({
+          to: email,
+          firstName,
+          ticketId,
+          description: `Topic: ${topic}\n\n${message}`,
+        });
+      } catch (err) {
+        console.error('[Portal /help] Confirmation email failed:', err.message);
+      }
+    }
+
+    return NextResponse.json({ success: true, ticketId });
   } catch (err) {
     console.error('[Portal /help] Error:', err);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
