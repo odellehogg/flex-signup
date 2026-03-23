@@ -226,6 +226,20 @@ async function handleSubscriptionUpdated(subscription) {
     'Subscription Status': newStatus,
     'Stripe Subscription ID': subscription.id,
   }).catch(e => console.error('[Stripe] Status update failed:', e));
+
+  // Send pause confirmation email
+  if (newStatus === MEMBER_STATUSES.PAUSED) {
+    const memberEmail = member.fields?.['Email'] || member['Email'];
+    const firstName = member.fields?.['First Name'] || 'there';
+    if (memberEmail) {
+      const resumeDate = subscription.pause_collection?.resumes_at
+        ? new Date(subscription.pause_collection.resumes_at * 1000).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })
+        : 'your next billing date';
+      const { sendPauseConfirmationEmail } = await import('@/lib/email');
+      await sendPauseConfirmationEmail({ to: memberEmail, firstName, resumeDate })
+        .catch(err => console.error('[Stripe] Pause email failed:', err));
+    }
+  }
 }
 
 // ============================================================================
@@ -247,5 +261,13 @@ async function handleSubscriptionDeleted(subscription) {
     const { sendSubCancelled } = await import('@/lib/whatsapp');
     await sendSubCancelled(phone, { firstName })
       .catch(e => console.error('[Stripe] Cancellation message error:', e));
+  }
+
+  // Send cancellation email
+  const memberEmail = member.fields?.['Email'] || member['Email'];
+  if (memberEmail) {
+    const { sendCancellationEmail } = await import('@/lib/email');
+    await sendCancellationEmail({ to: memberEmail, firstName })
+      .catch(err => console.error('[Stripe] Cancellation email failed:', err));
   }
 }

@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import { getMemberById, createIssue, updateIssue } from '@/lib/airtable';
-import { sendCustomerSupportConfirmationEmail } from '@/lib/email';
+import { sendCustomerSupportConfirmationEmail, sendOpsNewTicketEmail } from '@/lib/email';
 
 export async function POST(request) {
   try {
@@ -55,6 +55,15 @@ export async function POST(request) {
         console.error('[Portal /help] Confirmation email failed:', err.message);
       }
     }
+
+    // Send ops notification email
+    await sendOpsNewTicketEmail({
+      memberName: `${member.fields['First Name'] || ''} ${member.fields['Last Name'] || ''}`.trim(),
+      memberEmail: email,
+      memberPhone: member.fields['Phone'],
+      ticketId,
+      description: `[${topic}] ${message}`,
+    }).catch(err => console.error('[Portal /help] Ops notification email failed:', err.message));
 
     return NextResponse.json({ success: true, ticketId });
   } catch (err) {

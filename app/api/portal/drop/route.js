@@ -94,16 +94,24 @@ export async function POST(request) {
     // Send WhatsApp confirmation
     const phone = member.fields['Phone'];
     if (phone) {
-      try {
-        await sendDropConfirmed(phone, {
-          bagNumber: validation.bagNumber,
-          gymName,
-          expectedDate,
-          dropsRemaining,
-        });
-      } catch (err) {
-        console.error('[Portal /drop] WhatsApp confirmation failed:', err.message);
-      }
+      await sendDropConfirmed(phone, {
+        bagNumber: validation.bagNumber,
+        gymName,
+        expectedDate,
+        dropsRemaining,
+      }).catch(err => console.error('[Portal /drop] WhatsApp confirmation failed:', err.message));
+    }
+
+    // Send drop confirmation email
+    const email = member.fields['Email'];
+    if (email) {
+      const { sendDropConfirmationEmail } = await import('@/lib/email');
+      await sendDropConfirmationEmail({
+        to: email,
+        firstName: member.fields['First Name'] || 'there',
+        bagNumber: validation.bagNumber,
+        gymName,
+      }).catch(err => console.error('[Portal /drop] Confirmation email failed:', err.message));
     }
 
     return NextResponse.json({
