@@ -45,12 +45,21 @@ export default function PricingPage() {
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h2>
                   <div className="text-4xl font-bold text-emerald-600">
-                    £{plan.price}
-                    {plan.isSubscription && (
-                      <span className="text-lg font-normal text-gray-500">/month</span>
-                    )}
+                    £{plan.pricePerDrop ?? plan.price}
+                    <span className="text-lg font-normal text-gray-500">/drop</span>
                   </div>
-                  <p className="text-gray-600 mt-2">{plan.description}</p>
+                  {plan.billingNote ? (
+                    <div className="flex justify-center mt-3">
+                      <span className="inline-flex flex-col items-center bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold px-4 py-2 rounded-full leading-relaxed">
+                        <span>{plan.billingNote}</span>
+                        {plan.addonNote && (
+                          <span className="font-normal text-emerald-600 mt-0.5">{plan.addonNote}</span>
+                        )}
+                      </span>
+                    </div>
+                  ) : (
+                    <p className="text-gray-600 mt-2">{plan.description}</p>
+                  )}
                 </div>
                 
                 <ul className="space-y-3 mb-8">
@@ -100,17 +109,22 @@ export default function PricingPage() {
                 <tr className="border-b border-gray-100">
                   <td className="py-4 px-4 font-medium">Price</td>
                   <td className="text-center py-4 px-4">£5 (one-time)</td>
-                  <td className="text-center py-4 px-4 bg-emerald-50">£35/month</td>
+                  <td className="text-center py-4 px-4 bg-emerald-50">£42/month</td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-4 px-4 font-medium">Drops included</td>
                   <td className="text-center py-4 px-4">1</td>
-                  <td className="text-center py-4 px-4 bg-emerald-50">10</td>
+                  <td className="text-center py-4 px-4 bg-emerald-50">Up to 12</td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-4 px-4 font-medium">Price per drop</td>
                   <td className="text-center py-4 px-4">£5.00</td>
                   <td className="text-center py-4 px-4 bg-emerald-50">£3.50</td>
+                </tr>
+                <tr className="border-b border-gray-100">
+                  <td className="py-4 px-4 font-medium">Extra drops</td>
+                  <td className="text-center py-4 px-4">—</td>
+                  <td className="text-center py-4 px-4 bg-emerald-50">Top up £4/drop</td>
                 </tr>
                 <tr className="border-b border-gray-100">
                   <td className="py-4 px-4 font-medium">48-hour turnaround</td>
