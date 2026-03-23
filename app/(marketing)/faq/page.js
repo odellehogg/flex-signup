@@ -32,7 +32,7 @@ const faqs = [
     questions: [
       {
         q: 'What plans do you offer?',
-        a: 'We have three options: One-Off (£5 for a single drop), Essential (£35/month for 10 drops), and Unlimited (£48/month for up to 16 drops). The Essential plan is most popular for people who work out 2-3 times per week.',
+        a: 'We have two options: One-Off (£5 for a single drop — great for trying the service), and Essential (£42/month for up to 12 drops, that\'s just £3.50 per drop). Essential members can also top up with extra drops for £4 a drop whenever they need more in a given month.',
       },
       {
         q: 'Can I try before committing?',
