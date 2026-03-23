@@ -402,10 +402,13 @@ function JoinPageContent() {
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="font-semibold text-flex-navy">{selectedPlan.name} Plan</p>
-                        <p className="text-sm text-gray-500">{selectedPlan.drops} drop{selectedPlan.drops !== 1 ? 's' : ''} {selectedPlan.isSubscription ? 'per month' : ''}</p>
+                        <p className="text-sm text-gray-500">
+                          £{selectedPlan.pricePerDrop ?? selectedPlan.price}/drop
+                          {selectedPlan.isSubscription ? ` · billed £${selectedPlan.price}/mo` : ''}
+                        </p>
                       </div>
                       <p className="text-lg font-bold text-flex-navy">
-                        £{selectedPlan.price}{selectedPlan.isSubscription ? '/mo' : ''}
+                        £{selectedPlan.pricePerDrop ?? selectedPlan.price}<span className="text-sm font-normal text-gray-500">/drop</span>
                       </p>
                     </div>
                   </div>
@@ -454,18 +457,24 @@ function JoinPageContent() {
                         className="sr-only"
                       />
                       <div className="flex items-center justify-between">
-                        <div>
+                        <div className="flex-1 min-w-0">
                           <p className="font-semibold text-flex-navy">{plan.name}</p>
-                          <p className="text-sm text-gray-500">
-                            {plan.drops} drop{plan.drops !== 1 ? 's' : ''}{' '}
-                            {plan.slug !== 'single' && plan.slug !== 'oneoff' && plan.slug !== 'payg' ? 'per month' : ''}
-                          </p>
+                          {plan.billingNote ? (
+                            <span className="inline-flex flex-col mt-1 bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold px-3 py-1.5 rounded-full leading-relaxed">
+                              <span>{plan.billingNote}</span>
+                              {plan.addonNote && (
+                                <span className="font-normal text-emerald-600 mt-0.5">{plan.addonNote}</span>
+                              )}
+                            </span>
+                          ) : (
+                            <p className="text-sm text-gray-500 mt-0.5">One-time · no commitment</p>
+                          )}
                         </div>
-                        <div className="text-right">
-                          <p className="text-xl font-bold text-flex-navy">£{plan.price}</p>
-                          <p className="text-xs text-gray-500">
-                            {plan.isSubscription ? 'per month' : 'one-time'}
+                        <div className="text-right ml-3 flex-shrink-0">
+                          <p className="text-xl font-bold text-flex-navy">
+                            £{plan.pricePerDrop ?? plan.price}
                           </p>
+                          <p className="text-xs text-gray-500">/drop</p>
                         </div>
                       </div>
                     </label>
