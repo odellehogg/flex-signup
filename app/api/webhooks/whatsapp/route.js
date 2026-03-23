@@ -105,6 +105,12 @@ async function handleIdleState(member, input, phone, firstName) {
   if (matchesCommand(input, 'STATUS')) { await showDropStatus(member, phone); return; }
   if (matchesCommand(input, 'SUPPORT')) { await startSupportFlow(member, phone); return; }
 
+  // Add-on drop purchase
+  if (matchesCommand(input, 'EXTRA_DROP')) {
+    await handleAddonDrop(member, phone);
+    return;
+  }
+
   // Subscription management — send portal link (no full sub management via WhatsApp yet)
   if (matchesCommand(input, 'SUBSCRIPTION') || matchesCommand(input, 'BILLING') ||
       matchesCommand(input, 'PAUSE') || matchesCommand(input, 'RESUME')) {
@@ -316,4 +322,54 @@ async function handleAwaitingSupport(member, message, mediaUrls, phone) {
 
   await updateMember(member.id, { 'Conversation State': CONVERSATION_STATES.IDLE });
   await sendSupportConfirmed(phone, { ticketId });
+}
+
+async function handleAddonDrop(member, phone) {
+  const tier = member.fields['Subscription Tier'] || '';
+  const firstName = member.fields['First Name'] || 'there';
+
+  // Only Essential members can buy add-on drops
+  if (!tier.toLowerCase().includes('essential')) {
+    await sendMessage(phone,
+      `Hi ${firstName}! Add-on drops are available for Essential plan members only. 🌿\n\n` +
+      `To upgrade your plan, visit:\n${COMPANY.website}/pricing\n\n` +
+      `Or reply MENU to go back.`
+    );
+    return;
+  }
+
+  try {
+    const Stripe = (await import('stripe')).default;
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+    const { PLANS } = await import('@/lib/plans');
+    const addonPlan = PLANS['Addon Drop'];
+    const stripeCustomerId = member.fields['Stripe Customer ID'];
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      customer: stripeCustomerId || undefined,
+      customer_email: stripeCustomerId ? undefined : member.fields['Email'],
+      line_items: [{ price: addonPlan.stripePriceId, quantity: 1 }],
+      metadata: {
+        type: 'addon_drop',
+        memberId: member.id,
+        phone: phone,
+        firstName,
+      },
+      success_url: `${process.env.NEXT_PUBLIC_URL}/portal?addon=success`,
+      cancel_url: `${process.env.NEXT_PUBLIC_URL}/portal`,
+    });
+
+    await sendMessage(phone,
+      `Hey ${firstName}! Here's your link to add an extra drop for £4 💚\n\n` +
+      `${session.url}\n\n` +
+      `Your drop will be added as soon as payment is confirmed. ` +
+      `Link expires in 24 hours.\n\nReply MENU to go back.`
+    );
+  } catch (err) {
+    console.error('[WhatsApp] Addon drop error:', err);
+    await sendMessage(phone,
+      `Sorry ${firstName}, something went wrong. Please try again or visit ${COMPANY.website}/portal to buy an extra drop.`
+    );
+  }
 }
