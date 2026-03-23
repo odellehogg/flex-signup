@@ -25,8 +25,13 @@ export async function POST() {
     const member = await getMemberById(payload.memberId);
     if (!member) return NextResponse.json({ error: 'Member not found' }, { status: 404 });
 
+    // Null-safe subscription tier check
+    const tier = member.fields['Subscription Tier'];
+    if (!tier) {
+      return NextResponse.json({ error: 'No subscription tier found' }, { status: 400 });
+    }
+
     // Only Essential members can buy add-on drops
-    const tier = member.fields['Subscription Tier'] || '';
     if (!tier.toLowerCase().includes('essential')) {
       return NextResponse.json(
         { error: 'Add-on drops are only available to Essential plan members.' },

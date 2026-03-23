@@ -15,7 +15,7 @@ STRIPE_WEBHOOK_SECRET=whsec_xxx  # Webhook signing secret
 
 # Price IDs (from Stripe Dashboard > Products)
 STRIPE_PRICE_ONEOFF=price_xxx     # One-Off £5 price
-STRIPE_PRICE_ESSENTIAL=price_xxx  # Essential £35/month price
+STRIPE_PRICE_ESSENTIAL=price_xxx  # Essential £42/month price
 STRIPE_PRICE_UNLIMITED=price_xxx  # Unlimited £48/month price
 
 # Optional

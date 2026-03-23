@@ -9,7 +9,7 @@
 
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { createMember, getMemberById, getMemberByStripeCustomerId, updateMember } from '@/lib/airtable';
+import { createMember, getMemberById, getMemberByStripeCustomerId, getMemberByPhone, updateMember } from '@/lib/airtable';
 import { getPlan, getDropsForPlan } from '@/lib/plans';
 import { sendWelcome } from '@/lib/whatsapp';
 import { sendWelcomeEmail } from '@/lib/email';
@@ -98,8 +98,14 @@ async function handleCheckoutCompleted(session) {
   const dropsAllowed = getDropsForPlan(plan.name);
   const gymName = gymRecord?.fields?.Name || gymCode || 'your gym';
 
+  // Idempotency: skip if member with this phone already exists
+  const existing = await getMemberByPhone(phone);
+  if (existing) {
+    console.log(`[Stripe] Member already exists for phone ${phone}, skipping creation`);
+    return;
+  }
+
   try {
-    // ✅ createMember uses correct field names internally
     const member = await createMember({
       phone,
       email,
@@ -110,7 +116,7 @@ async function handleCheckoutCompleted(session) {
       status: MEMBER_STATUSES.ACTIVE,
       stripeCustomerId: customerId,
       stripeSubscriptionId: subscriptionId || '',
-      dropsAllowed, // ✅ maps to 'Drops Allowed' field
+      dropsAllowed,
     });
 
     console.log(`[Stripe] Created member: ${member.id}`);
@@ -171,7 +177,6 @@ async function handlePaymentSucceeded(invoice) {
   const dropsAllowed = getDropsForPlan(planName);
 
   if (dropsAllowed > 0) {
-    // ✅ Reset 'Drops Used' to 0 (effectively restoring all drops)
     await updateMember(member.id, {
       'Drops Used': 0,
       'Subscription Status': MEMBER_STATUSES.ACTIVE,
@@ -179,7 +184,6 @@ async function handlePaymentSucceeded(invoice) {
 
     console.log(`[Stripe] Reset drops for member: ${member.id}`);
 
-    // Send drop reset notification via WhatsApp
     const phone = member.fields['Phone'];
     const firstName = member.fields['First Name'] || 'there';
     if (phone) {
@@ -199,7 +203,7 @@ async function handlePaymentFailed(invoice) {
   const member = await getMemberByStripeCustomerId(invoice.customer);
   if (!member) return;
 
-  const phone = member.fields['Phone']; // ✅ 'Phone' not 'Phone Number'
+  const phone = member.fields['Phone'];
   const firstName = member.fields['First Name'] || 'there';
 
   if (phone) {
@@ -222,7 +226,6 @@ async function handleSubscriptionUpdated(subscription) {
   else if (subscription.pause_collection) newStatus = MEMBER_STATUSES.PAUSED;
   else if (subscription.status === 'active') newStatus = MEMBER_STATUSES.ACTIVE;
 
-  // ✅ 'Subscription Status' not 'Status'
   await updateMember(member.id, {
     'Subscription Status': newStatus,
     'Stripe Subscription ID': subscription.id,
@@ -238,10 +241,10 @@ async function handleSubscriptionDeleted(subscription) {
 
   await updateMember(member.id, {
     'Subscription Status': MEMBER_STATUSES.CANCELLED,
-    'Drops Used': member.fields['Drops Allowed'] || 0, // Zero out remaining drops
+    'Drops Used': member.fields['Drops Allowed'] || 0,
   }).catch(e => console.error('[Stripe] Cancellation update failed:', e));
 
-  const phone = member.fields['Phone']; // ✅ 'Phone'
+  const phone = member.fields['Phone'];
   const firstName = member.fields['First Name'] || 'there';
 
   if (phone) {

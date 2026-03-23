@@ -16,7 +16,7 @@ Complete codebase rebuild consolidating all phases (MVP, Portal, Ops Dashboard) 
 #### Critical Fixes
 | Issue | Before | After | File |
 |-------|--------|-------|------|
-| Essential plan drops | 8 drops | **10 drops** | `lib/plans.js` |
+| Essential plan drops | 8 drops | **12 drops** | `lib/plans.js` |
 | Airtable linked records | Direct lookup (failed) | **FIND with ARRAYJOIN** | `lib/airtable.js` |
 | Phone number scattered | Hardcoded in multiple files | **Centralized in constants.js** | `lib/constants.js` |
 | WhatsApp template failures | Silent failures | **Plain text fallbacks** | `lib/whatsapp.js` |

@@ -238,17 +238,30 @@ async function handleAwaitingBag(member, input, phone) {
     const g = await getGymById(gymId).catch(() => null);
     gymName = g?.fields?.Name || 'your gym';
   }
-  await createDrop({ memberId: member.id, bagId: bag.id, bagNumber, gymId });
+  let drop;
+  try {
+    drop = await createDrop({ memberId: member.id, bagId: bag.id, bagNumber, gymId });
+  } catch (err) {
+    console.error('[WhatsApp] createDrop failed, not incrementing Drops Used:', err);
+    throw err;
+  }
+
+  const newDropsUsed = (member.fields['Drops Used'] || 0) + 1;
+  const newDropsRemaining = Math.max(0, (member.fields['Drops Allowed'] || 0) - newDropsUsed);
+  try {
+    await updateMember(member.id, {
+      'Drops Used': newDropsUsed,
+      'Conversation State': CONVERSATION_STATES.IDLE,
+    });
+  } catch (err) {
+    console.error(`[WhatsApp] CRITICAL: Drop ${drop.id} created but Drops Used failed to update for member ${member.id}:`, err);
+    throw err;
+  }
+
   const expectedReady = new Date(Date.now() + 48 * 60 * 60 * 1000);
   const expectedDate = expectedReady.toLocaleDateString('en-GB', {
     weekday: 'long', day: 'numeric', month: 'short',
     timeZone: 'Europe/London',
-  });
-  const newDropsUsed = (member.fields['Drops Used'] || 0) + 1;
-  const newDropsRemaining = Math.max(0, (member.fields['Drops Allowed'] || 0) - newDropsUsed);
-  await updateMember(member.id, {
-    'Drops Used': newDropsUsed,
-    'Conversation State': CONVERSATION_STATES.IDLE,
   });
   await sendDropConfirmed(phone, { bagNumber, gymName, expectedDate, dropsRemaining: newDropsRemaining });
 

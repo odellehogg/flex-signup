@@ -40,7 +40,7 @@ export default function HowItWorksPage() {
                 </li>
                 <li className="flex items-center">
                   <span className="text-emerald-500 mr-2">✓</span>
-                  Essential: £35/month for 10 drops
+                  Essential: £42/month for 12 drops
                 </li>
                 <li className="flex items-center">
                   <span className="text-emerald-500 mr-2">✓</span>

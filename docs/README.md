@@ -30,7 +30,7 @@ vercel --prod
 | Tier | Price | Drops/Month | Cost per Drop |
 |------|-------|-------------|---------------|
 | One-Off | £5 | 1 | £5.00 |
-| Essential | £35 | 10 | £3.50 |
+| Essential | £42 | 12 | £3.50 |
 | Unlimited | £48 | 16 (cap) | £3.00 |
 
 ## Technical Stack

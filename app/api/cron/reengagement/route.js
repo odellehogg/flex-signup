@@ -8,7 +8,7 @@ const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
 function verifyCronSecret(request) {
   const authHeader = request.headers.get('authorization');
   const expectedSecret = process.env.CRON_SECRET;
-  if (!expectedSecret) return true;
+  if (!expectedSecret) return false;
   return authHeader === `Bearer ${expectedSecret}`;
 }
 

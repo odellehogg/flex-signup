@@ -49,7 +49,7 @@ Open [http://localhost:3000](http://localhost:3000) to view the site.
 | Tier | Price | Drops | Description |
 |------|-------|-------|-------------|
 | One-Off | £5 | 1 | Trial |
-| Essential | £35/mo | 10 | Core plan |
+| Essential | £42/mo | 12 | Core plan |
 | Unlimited | £48/mo | 16 | Heavy users |
 
 ## Key Features

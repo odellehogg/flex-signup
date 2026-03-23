@@ -3,7 +3,7 @@ import ErrorBoundary from '@/components/ErrorBoundary'
 
 export const metadata = {
   title: 'FLEX | Gym Clothes Laundry Made Easy',
-  description: 'Drop off sweaty gym clothes, pick up fresh. 48-hour turnaround at your gym. Subscription plans from £30/month.',
+  description: 'Drop off sweaty gym clothes, pick up fresh. 48-hour turnaround at your gym. Subscription plans from £42/month.',
   keywords: 'gym laundry, activewear cleaning, fitness laundry service, gym clothes wash',
   openGraph: {
     title: 'FLEX | Gym Clothes Laundry Made Easy',
