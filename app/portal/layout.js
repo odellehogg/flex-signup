@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { COMPANY } from '@/lib/constants';
+import PortalLogoutButton from '@/components/PortalLogoutButton';
 
 export const metadata = {
   title: 'Member Portal - FLEX',
@@ -17,20 +17,13 @@ export default function PortalLayout({ children }) {
               FLEX
             </Link>
             <div className="flex items-center gap-4">
-              <a 
-                href={`https://wa.me/${COMPANY.phone.replace('+', '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/portal/help"
                 className="text-gray-600 hover:text-emerald-600 text-sm"
               >
                 Need help?
-              </a>
-              <Link 
-                href="/api/portal/logout"
-                className="text-gray-600 hover:text-red-600 text-sm"
-              >
-                Logout
               </Link>
+              <PortalLogoutButton />
             </div>
           </div>
         </div>

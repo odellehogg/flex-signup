@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function PortalLoginPage() {
   const router = useRouter();
+  const verifiedRef = useRef(false);
   const [step, setStep] = useState('phone'); // 'phone' or 'code'
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
@@ -40,6 +41,7 @@ export default function PortalLoginPage() {
 
   const handleVerifyCode = async (e) => {
     e.preventDefault();
+    if (verifiedRef.current || loading) return;
     setLoading(true);
     setError('');
 
@@ -57,12 +59,12 @@ export default function PortalLoginPage() {
       }
 
       // Redirect to dashboard
-      router.push('/portal');
-      router.refresh();
+      verifiedRef.current = true;
+      window.location.href = '/portal';
     } catch (err) {
-      setError(err.message);
+      if (!verifiedRef.current) setError(err.message);
     } finally {
-      setLoading(false);
+      if (!verifiedRef.current) setLoading(false);
     }
   };
 
