@@ -1,15 +1,49 @@
 import { NextResponse } from 'next/server';
 import { updateIssue } from '@/lib/airtable';
 
+async function getEmailContent(emailId) {
+  try {
+    const res = await fetch(`https://api.resend.com/emails/${emailId}`, {
+      headers: {
+        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+      },
+    });
+    if (!res.ok) {
+      console.error(`[Inbound Email] Resend API ${res.status} fetching email ${emailId}`);
+      return null;
+    }
+    return await res.json();
+  } catch (err) {
+    console.error(`[Inbound Email] Failed to fetch email ${emailId}:`, err.message);
+    return null;
+  }
+}
+
+function stripQuotedContent(text) {
+  if (!text) return '';
+  // Remove everything after "On ... wrote:" lines
+  let clean = text.split(/\n\s*On .* wrote:\s*\n/)[0];
+  // Remove lines starting with >
+  clean = clean.split('\n')
+    .filter(line => !line.trim().startsWith('>'))
+    .join('\n')
+    .trim();
+  return clean;
+}
+
 export async function POST(request) {
   try {
     const body = await request.json();
 
-    // Resend inbound webhook sends: from, to, subject, text, html
-    const { from, subject, text } = body;
+    // Resend email.received webhook format: { type, data: { email_id, from, to, subject, ... } }
+    if (body.type !== 'email.received') {
+      return NextResponse.json({ received: true, ignored: true });
+    }
 
-    if (!from || !subject) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const { email_id, from, subject } = body.data || {};
+
+    if (!email_id || !subject) {
+      return NextResponse.json({ error: 'Missing email_id or subject' }, { status: 400 });
     }
 
     // Extract ticket ID from subject line — format: #XXXXX
@@ -20,9 +54,10 @@ export async function POST(request) {
     }
 
     const ticketId = ticketMatch[1].toUpperCase();
-    console.log(`[Inbound Email] Processing reply for ticket #${ticketId} from ${from}`);
+    const senderEmail = typeof from === 'string' ? from : from?.address || from;
+    console.log(`[Inbound Email] Processing reply for ticket #${ticketId} from ${senderEmail}`);
 
-    // Find the issue in Airtable by searching for the ticket ID
+    // Find the issue in Airtable
     const { airtableFetch, TABLES } = await import('@/lib/airtable');
     const data = await airtableFetch(TABLES.ISSUES, {
       params: {
@@ -38,22 +73,19 @@ export async function POST(request) {
 
     const issue = data.records[0];
 
-    // Strip quoted content from reply
-    let cleanReply = text || '';
-    cleanReply = cleanReply.split(/\n\s*On .* wrote:\s*\n/)[0];
-    cleanReply = cleanReply.split('\n')
-      .filter(line => !line.trim().startsWith('>'))
-      .join('\n')
-      .trim();
-
+    // Fetch the full email body from Resend API
+    const emailData = await getEmailContent(email_id);
+    let cleanReply;
+    if (emailData?.text) {
+      cleanReply = stripQuotedContent(emailData.text);
+    }
     if (!cleanReply) {
-      cleanReply = '(Empty reply)';
+      cleanReply = '(Could not retrieve email body)';
     }
 
     // Append customer reply to Internal Notes
     const existingNotes = issue.fields['Internal Notes'] || '';
     const timestamp = new Date().toLocaleString('en-GB', { timeZone: 'Europe/Dublin' });
-    const senderEmail = typeof from === 'string' ? from : from?.address || from;
     const newNote = `\n\n--- Customer Reply (${timestamp}) ---\nFrom: ${senderEmail}\n${cleanReply}`;
     const updatedNotes = existingNotes + newNote;
 
