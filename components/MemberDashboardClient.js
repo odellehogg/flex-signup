@@ -150,13 +150,13 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
 
         {/* Welcome Header */}
         <div className="bg-gradient-to-r from-flex-navy to-[#2a2a2a] text-white rounded-2xl p-6 mb-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="flex items-center space-x-4">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
                 <User className="w-8 h-8" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold">Welcome back, {member.firstName}!</h1>
+                <h1 className="text-xl sm:text-2xl font-bold">Welcome back, {member.firstName}!</h1>
                 <p className="text-gray-300">{member.email}</p>
               </div>
             </div>
@@ -177,7 +177,7 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
           <div className="bg-white rounded-xl shadow-sm p-5 border border-gray-100">
             <div className="flex items-center justify-between mb-2">
               <span className="text-gray-500 text-sm">Drops Remaining</span>
@@ -259,7 +259,7 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Recent Drops */}
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <h2 className="font-semibold text-gray-900 mb-4">Recent Drops</h2>
@@ -376,7 +376,7 @@ export default function MemberDashboardClient({ member, subscription, drops }) {
         <div className="mt-6 bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <h2 className="font-semibold text-gray-900 mb-4">Account Details</h2>
           
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
               <User className="w-5 h-5 text-gray-400" />
               <div>

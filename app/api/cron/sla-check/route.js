@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDropsAtRisk, getTicketsNeedingAttention } from '@/lib/sla';
-import { sendOpsNewTicketEmail } from '@/lib/email';
+import { sendEmail } from '@/lib/email';
 
 function verifyCronSecret(request) {
   const authHeader = request.headers.get('authorization');
@@ -54,16 +54,35 @@ export async function GET(request) {
     // Send ops alert if there are critical issues
     if (alerts.length > 0) {
       const opsEmail = process.env.OPS_EMAIL || 'odellehogg@gmail.com';
-      
-      const alertSummary = alerts.map(a => 
-        `${a.type}: ${a.count} items`
-      ).join('\n');
+
+      const alertItems = alerts.map(a => {
+        if (a.type === 'drops_at_risk') {
+          return `<h3>⚠️ ${a.count} Drop(s) at Risk</h3><ul>${a.items.map(i =>
+            `<li>Bag ${i.bagNumber} — ${i.status} (${i.riskLevel})</li>`
+          ).join('')}</ul>`;
+        }
+        if (a.type === 'overdue_tickets') {
+          return `<h3>🎫 ${a.count} Overdue Ticket(s)</h3><ul>${a.items.map(i =>
+            `<li>${i.type} from ${i.memberName} (${i.urgency})</li>`
+          ).join('')}</ul>`;
+        }
+        return '';
+      }).join('');
+
+      const totalIssues = alerts.reduce((sum, a) => sum + a.count, 0);
 
       try {
-        await sendOpsNewTicketEmail({
+        await sendEmail({
           to: opsEmail,
-          subject: `FLEX SLA Alert: ${alerts.reduce((sum, a) => sum + a.count, 0)} issues`,
-          summary: alertSummary,
+          subject: `⚠️ FLEX SLA Alert: ${totalIssues} issue${totalIssues > 1 ? 's' : ''} need attention`,
+          html: `<div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 20px; margin-bottom: 20px;">
+              <h2 style="margin: 0;">SLA Alert — ${totalIssues} Issue${totalIssues > 1 ? 's' : ''}</h2>
+            </div>
+            ${alertItems}
+            <p style="color: #666; margin-top: 20px;">Check the <a href="https://www.flexlaundry.co.uk/ops">ops dashboard</a> for details.</p>
+          </div>`,
+          text: alerts.map(a => `${a.type}: ${a.count} items`).join('\n'),
         });
       } catch (err) {
         console.error('Failed to send ops alert:', err);

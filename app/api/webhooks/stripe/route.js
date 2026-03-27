@@ -130,6 +130,17 @@ async function handleCheckoutCompleted(session) {
       await sendWelcomeEmail({ to: email, firstName: firstName || 'there', planName: plan.name, gymName })
         .catch(err => console.error('[Stripe] Email welcome failed:', err));
     }
+
+    // Notify ops about new member
+    const { sendOpsNewMemberEmail } = await import('@/lib/email');
+    await sendOpsNewMemberEmail({
+      firstName: firstName || 'Unknown',
+      lastName: lastName || '',
+      email: email || '',
+      phone: phone || '',
+      plan: plan.name,
+      gymName,
+    }).catch(err => console.error('[Stripe] Ops new member email failed:', err));
   } catch (err) {
     console.error('[Stripe] Member creation failed:', err);
   }

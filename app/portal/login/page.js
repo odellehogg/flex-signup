@@ -79,7 +79,7 @@ export default function PortalLoginPage() {
           <p className="text-gray-600 mt-2">
             {step === 'phone' 
               ? 'Enter your phone number to login'
-              : 'Enter the code we sent to WhatsApp'
+              : 'Enter the code we sent to your WhatsApp and email'
             }
           </p>
         </div>
@@ -136,7 +136,7 @@ export default function PortalLoginPage() {
                   autoFocus
                 />
                 <p className="text-xs text-gray-500 mt-1">
-                  Check WhatsApp for your 6-digit code
+                  Check your WhatsApp or email for the code
                 </p>
               </div>
 

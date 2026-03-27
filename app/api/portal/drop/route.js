@@ -114,6 +114,15 @@ export async function POST(request) {
       }).catch(err => console.error('[Portal /drop] Confirmation email failed:', err.message));
     }
 
+    // Notify ops about new drop
+    const { sendOpsNewDropEmail } = await import('@/lib/email');
+    await sendOpsNewDropEmail({
+      memberName: member.fields['First Name'] || 'Unknown',
+      memberPhone: member.fields['Phone'] || '',
+      bagNumber: validation.bagNumber,
+      gymName,
+    }).catch(err => console.error('[Portal /drop] Ops drop email failed:', err.message));
+
     return NextResponse.json({
       success: true,
       bagNumber: validation.bagNumber,
