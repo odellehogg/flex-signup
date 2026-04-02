@@ -16,11 +16,11 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-flex-border">
-        <nav className="max-w-[1100px] mx-auto px-5 md:px-10">
+      <header className="fixed top-2 left-2 right-2 z-50 bg-white/92 backdrop-blur-2xl rounded-[20px] border border-flex-border" style={{ WebkitBackdropFilter: 'blur(20px)' }}>
+        <nav className="px-4 md:px-5">
           <div className="flex items-center justify-between h-[50px]">
             {/* Logo */}
-            <Link href="/" className="font-display text-xl font-extrabold text-flex-black">
+            <Link href="/" style={{ fontFamily: "'Unbounded', sans-serif" }} className="text-xl font-extrabold text-flex-black">
               FLEX
             </Link>
 
@@ -69,7 +69,8 @@ export default function Header() {
             <Link
               key={item.name}
               href={item.href}
-              className="font-display text-2xl font-bold text-flex-black py-3 border-b border-flex-border"
+              className="text-2xl font-bold text-flex-black py-3 border-b border-flex-border"
+              style={{ fontFamily: "'Unbounded', sans-serif" }}
               onClick={() => setMobileMenuOpen(false)}
             >
               {item.name}

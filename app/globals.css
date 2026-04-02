@@ -20,8 +20,13 @@ html {
 }
 
 body {
-  font-family: 'DM Sans', system-ui, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif !important;
   -webkit-font-smoothing: antialiased;
+}
+
+/* Ensure display font on all headings */
+h1, h2, h3, h4, .font-display, .heading-1, .heading-2, .heading-3 {
+  font-family: 'Unbounded', sans-serif !important;
 }
 
 @layer components {
