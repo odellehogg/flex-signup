@@ -34,7 +34,7 @@ export default function RootLayout({ children }) {
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
-      <body className="bg-white text-gray-900 antialiased">
+      <body className="bg-flex-card text-flex-black antialiased">
         <ErrorBoundary>
           {children}
         </ErrorBoundary>

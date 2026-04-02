@@ -1,130 +1,83 @@
 import { COMPANY } from '@/lib/constants';
 
 export const metadata = {
-  title: 'Contact Us - FLEX Gym Laundry Service',
-  description: 'Get in touch with FLEX. Contact us via WhatsApp or email.',
+  title: 'Contact — FLEX Gym Laundry',
+  description: 'Get in touch with FLEX. WhatsApp or email us.',
+  openGraph: { title: 'Contact — FLEX', url: 'https://www.flexlaundry.co.uk/contact' },
 };
 
 export default function ContactPage() {
   return (
     <>
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-emerald-50 to-white py-16 md:py-24">
+      <section className="section-padding pt-24 md:pt-32 bg-flex-bg">
         <div className="container-page text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Get In Touch
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            We'd love to hear from you. Reach out anytime.
-          </p>
+          <span className="label-tag">Contact</span>
+          <h1 className="heading-1 mt-3">Get in touch.</h1>
+          <p className="text-flex-text mt-2 text-lg">We&apos;re here to help. Reach us however&apos;s easiest.</p>
         </div>
       </section>
 
-      {/* Contact Options */}
-      <section className="section bg-white">
-        <div className="container-page max-w-4xl">
-          <div className="grid md:grid-cols-2 gap-8">
-            {/* WhatsApp */}
-            <div className="card text-center">
-              <div className="text-5xl mb-4">💬</div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">WhatsApp</h2>
-              <p className="text-gray-600 mb-4">
-                Fastest way to reach us. We typically respond within minutes.
-              </p>
-              <a 
-                href={`https://wa.me/${COMPANY.phone.replace('+', '')}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary inline-block"
-              >
-                Message Us
-              </a>
-              <p className="text-sm text-gray-500 mt-3">
-                {COMPANY.phone}
-              </p>
+      <section className="section-padding">
+        <div className="container-page max-w-[800px]">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-[20px] p-7 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
+              <div className="text-3xl mb-3">💬</div>
+              <h3 className="heading-3 mb-1">WhatsApp</h3>
+              <p className="text-flex-text text-[0.82rem] mb-4">Fastest way to reach us. We typically respond within minutes.</p>
+              <a href={`https://wa.me/${COMPANY.phone.replace('+', '')}`} className="btn-primary text-[0.75rem] px-5 py-2.5">Message Us &rarr;</a>
+              <p className="text-[0.68rem] text-flex-muted mt-2">{COMPANY.phone}</p>
             </div>
-
-            {/* Email */}
-            <div className="card text-center">
-              <div className="text-5xl mb-4">📧</div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Email</h2>
-              <p className="text-gray-600 mb-4">
-                For detailed inquiries or partnership discussions.
-              </p>
-              <a 
-                href={`mailto:${COMPANY.email}`}
-                className="btn-primary inline-block"
-              >
-                Send Email
-              </a>
-              <p className="text-sm text-gray-500 mt-3">
-                {COMPANY.email}
-              </p>
+            <div className="bg-white rounded-[20px] p-7 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
+              <div className="text-3xl mb-3">✉️</div>
+              <h3 className="heading-3 mb-1">Email</h3>
+              <p className="text-flex-text text-[0.82rem] mb-4">For detailed inquiries or partnership discussions.</p>
+              <a href={`mailto:${COMPANY.email}`} className="btn-secondary text-[0.75rem] px-5 py-2.5">Send Email &rarr;</a>
+              <p className="text-[0.68rem] text-flex-muted mt-2">{COMPANY.email}</p>
             </div>
           </div>
 
-          {/* Additional Info */}
-          <div className="mt-12 text-center">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">
-              Support Hours
-            </h3>
-            <p className="text-gray-600">
-              Monday - Friday: 9am - 6pm<br />
-              Saturday: 10am - 4pm<br />
-              Sunday: Closed
-            </p>
+          <div className="text-center mt-10">
+            <span className="label-tag">Support Hours</span>
+            <div className="grid grid-cols-3 gap-2 max-w-[380px] mx-auto mt-4">
+              <div className="bg-white rounded-2xl p-3 text-center shadow-sm">
+                <div className="font-semibold text-[0.7rem]">Mon-Fri</div>
+                <div className="text-[0.72rem] text-flex-muted">9am-6pm</div>
+              </div>
+              <div className="bg-white rounded-2xl p-3 text-center shadow-sm">
+                <div className="font-semibold text-[0.7rem]">Saturday</div>
+                <div className="text-[0.72rem] text-flex-muted">10am-4pm</div>
+              </div>
+              <div className="bg-white rounded-2xl p-3 text-center shadow-sm">
+                <div className="font-semibold text-[0.7rem]">Sunday</div>
+                <div className="text-[0.72rem] text-flex-muted">Closed</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center mt-10">
+            <h2 className="heading-2">How can we help?</h2>
+          </div>
+          <div className="grid md:grid-cols-2 gap-3 mt-5">
+            {[
+              { t: 'New Customer', d: 'How the service works, pricing, getting started.' },
+              { t: 'Existing Member', d: 'Order tracking, subscription changes, reporting an issue.' },
+              { t: 'Gym Partnership', d: 'Want FLEX at your gym? Let\'s talk.' },
+              { t: 'Press & Media', d: 'Interviews, features, press kit requests.' },
+            ].map((topic, i) => (
+              <div key={i} className="bg-white rounded-[20px] p-5 shadow-sm hover:shadow-md transition-shadow">
+                <h3 className="font-semibold text-[0.88rem] mb-0.5">{topic.t}</h3>
+                <p className="text-flex-muted text-[0.72rem]">{topic.d}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Common Topics */}
-      <section className="section bg-gray-50">
-        <div className="container-page max-w-4xl">
-          <h2 className="text-2xl font-bold text-center text-gray-900 mb-8">
-            How Can We Help?
-          </h2>
-          
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-lg">
-              <h3 className="font-semibold mb-2">New Customer Questions</h3>
-              <p className="text-gray-600 text-sm">
-                Questions about how FLEX works, pricing, or getting started.
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg">
-              <h3 className="font-semibold mb-2">Existing Member Support</h3>
-              <p className="text-gray-600 text-sm">
-                Track orders, manage subscription, or report an issue.
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg">
-              <h3 className="font-semibold mb-2">Gym Partnerships</h3>
-              <p className="text-gray-600 text-sm">
-                Interested in bringing FLEX to your gym? Let's talk.
-              </p>
-            </div>
-            <div className="bg-white p-6 rounded-lg">
-              <h3 className="font-semibold mb-2">Press & Media</h3>
-              <p className="text-gray-600 text-sm">
-                Media inquiries and press requests.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Company Info */}
-      <section className="section bg-white">
-        <div className="container-page text-center max-w-2xl">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">
-            Company Information
-          </h2>
-          <p className="text-gray-600">
-            <strong>{COMPANY.legalName}</strong><br />
-            Trading as "{COMPANY.name}"<br /><br />
-            {COMPANY.address.line1}<br />
-            {COMPANY.address.country}
-          </p>
+      <section className="section-padding bg-flex-bg">
+        <div className="container-page text-center">
+          <span className="label-tag">Company</span>
+          <p className="font-medium text-[0.88rem] mt-2">FLEX Active Group Ltd</p>
+          <p className="text-flex-muted text-[0.68rem]">London, United Kingdom &middot; Company No. 12345678</p>
         </div>
       </section>
     </>

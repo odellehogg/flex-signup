@@ -1,126 +1,80 @@
 import Link from 'next/link';
 
 export const metadata = {
-  title: 'Partner With FLEX - Gym Partnership Opportunities',
-  description: 'Become a FLEX partner gym. Offer your members convenient laundry service with zero operational burden.',
+  title: 'Partner With FLEX — Gym Partnership',
+  description: 'Add a unique member perk at zero cost. FLEX handles everything.',
+  openGraph: { title: 'Partner With FLEX', url: 'https://www.flexlaundry.co.uk/partners' },
 };
 
 export default function PartnersPage() {
   return (
     <>
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-emerald-50 to-white py-16 md:py-24">
+      <section className="section-padding pt-24 md:pt-32 bg-flex-bg">
         <div className="container-page text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Partner With FLEX
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Add value for your members with zero operational burden.
-          </p>
+          <span className="label-tag">Gym Partners</span>
+          <h1 className="heading-1 mt-3">A unique perk your<br />members will love.</h1>
+          <p className="text-flex-text mt-3 text-lg">We handle everything. Your gym gets a premium member benefit at zero cost.</p>
         </div>
       </section>
 
-      {/* Benefits */}
-      <section className="section bg-white">
+      <section className="section-padding">
         <div className="container-page">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            Why Partner With Us?
-          </h2>
-          
-          <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-            <div className="card text-center">
-              <div className="text-4xl mb-4">💰</div>
-              <h3 className="font-semibold text-xl mb-2">Zero Cost</h3>
-              <p className="text-gray-600">
-                No setup fees, no operational costs. We handle everything.
-              </p>
+          <div className="text-center mb-6">
+            <span className="label-tag">Why Partner</span>
+            <h2 className="heading-2 mt-2">Benefits for your gym.</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="bg-white rounded-[20px] p-7 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
+              <div className="text-3xl mb-3">💰</div>
+              <h3 className="heading-3 mb-2">Zero Cost</h3>
+              <p className="text-flex-text text-[0.82rem]">No setup fees, no operational costs. We supply everything and handle all logistics.</p>
             </div>
-            <div className="card text-center">
-              <div className="text-4xl mb-4">🏆</div>
-              <h3 className="font-semibold text-xl mb-2">Member Retention</h3>
-              <p className="text-gray-600">
-                Added convenience keeps members coming back.
-              </p>
+            <div className="bg-white rounded-[20px] p-7 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
+              <div className="text-3xl mb-3">🏆</div>
+              <h3 className="heading-3 mb-2">Member Retention</h3>
+              <p className="text-flex-text text-[0.82rem]">Give members a reason to stay. A unique benefit that no other gym offers.</p>
             </div>
-            <div className="card text-center">
-              <div className="text-4xl mb-4">📈</div>
-              <h3 className="font-semibold text-xl mb-2">Revenue Share</h3>
-              <p className="text-gray-600">
-                Earn commission on every member who signs up.
-              </p>
+            <div className="bg-white rounded-[20px] p-7 text-center shadow-sm hover:shadow-md hover:-translate-y-1 transition-all">
+              <div className="text-3xl mb-3">⭐</div>
+              <h3 className="heading-3 mb-2">Premium Positioning</h3>
+              <p className="text-flex-text text-[0.82rem]">Position your gym as forward-thinking. Show members you care about their experience.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="section bg-gray-50">
-        <div className="container-page max-w-4xl">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            How Partnership Works
-          </h2>
-          
-          <div className="space-y-8">
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
-                1
+      <section className="section-padding bg-flex-bg">
+        <div className="container-page">
+          <div className="text-center mb-6">
+            <span className="label-tag">How It Works</span>
+            <h2 className="heading-2 mt-2">Getting started is easy.</h2>
+          </div>
+          <div className="max-w-[700px] mx-auto">
+            {[
+              { num: '01', title: 'We set you up', desc: 'We provide branded materials, bags, and a quick staff briefing. Takes about 15 minutes.' },
+              { num: '02', title: 'Members drop off', desc: 'Members leave their gym clothes at reception in a FLEX bag. Your staff just stores them.' },
+              { num: '03', title: 'We handle the rest', desc: 'Daily collection, professional cleaning, 48-hour return. Your staff hands bags back when asked.' },
+              { num: '04', title: 'Members love it', desc: 'Your gym offers something no one else does. Members stay longer, talk about it, bring friends.' },
+            ].map((step) => (
+              <div key={step.num} className="flex gap-3.5 items-start py-4 border-b border-flex-border last:border-none group">
+                <div className="w-10 h-10 min-w-[40px] bg-white rounded-full flex items-center justify-center font-display font-extrabold text-sm text-flex-muted group-hover:bg-flex-black group-hover:text-white transition-all">
+                  {step.num}
+                </div>
+                <div>
+                  <h3 className="heading-3 mb-0.5">{step.title}</h3>
+                  <p className="text-flex-text text-[0.82rem]">{step.desc}</p>
+                </div>
               </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">We Set Up</h3>
-                <p className="text-gray-600">
-                  We provide all materials: branded bags, signage, and staff training (10 mins).
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
-                2
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">Members Drop Off</h3>
-                <p className="text-gray-600">
-                  Members leave bags at reception. Your staff just needs to hold them for collection.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
-                3
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">We Handle The Rest</h3>
-                <p className="text-gray-600">
-                  We collect daily, clean, and return within 48 hours. Members pick up at reception.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center font-bold flex-shrink-0">
-                4
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg mb-1">You Earn Commission</h3>
-                <p className="text-gray-600">
-                  Receive monthly commission payments based on active members at your location.
-                </p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="section bg-emerald-600">
-        <div className="container-page text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Interested in Partnering?
-          </h2>
-          <p className="text-xl text-emerald-100 mb-8">
-            Let's discuss how FLEX can benefit your members.
-          </p>
-          <Link href="/contact" className="bg-white text-emerald-600 hover:bg-emerald-50 font-semibold py-3 px-8 rounded-lg text-lg transition-colors duration-200">
-            Get In Touch
-          </Link>
+      <section className="bg-flex-black text-white text-center py-12 md:py-20 rounded-[28px] mx-3 mb-3">
+        <div className="container-page">
+          <h2 className="heading-2 text-white">Let&apos;s partner up.</h2>
+          <p className="text-flex-muted mt-2 mb-6">Email us to get started. We&apos;ll have you set up within a week.</p>
+          <a href="mailto:hello@flexlaundry.co.uk" className="btn-white">Get in Touch &rarr;</a>
         </div>
       </section>
     </>

@@ -1,68 +1,87 @@
 import Link from 'next/link'
-import { getPublicPlans } from '@/lib/plans'
 
 export const metadata = {
-  title: 'FLEX | Gym Clothes Laundry Made Easy',
-  description: 'Drop off sweaty gym clothes, pick up fresh. 48-hour turnaround at your gym. Subscription plans from £5/drop.',
+  title: 'FLEX — Gym Clothes Laundry, Sorted',
+  description: 'Drop off sweaty gym clothes, pick up fresh. 48-hour turnaround at your gym. From £3.50 per drop.',
+  openGraph: {
+    title: 'FLEX — Gym Clothes Laundry, Sorted',
+    description: 'Gym clothes laundry made easy. 48-hour turnaround. From £3.50 per drop.',
+    url: 'https://www.flexlaundry.co.uk',
+    siteName: 'FLEX',
+    locale: 'en_GB',
+    type: 'website',
+  },
 }
 
 export default function HomePage() {
-  const plans = getPublicPlans(); // ✅ FIX: Only show MVP plans (One-Off + Essential)
-  
-  const problems = [
-    { title: 'Time Drain', description: '7+ hours per week spent on laundry chores when you could be doing literally anything else.' },
-    { title: 'Ruined Clothes', description: 'Up to 30% of activewear gets damaged by harsh detergents and wrong washing techniques.' },
-    { title: 'Smelly Gym Bag', description: 'Sweaty clothes sitting in your bag all day. The smell follows you everywhere.' },
-  ]
-
-  const steps = [
-    { title: 'Drop Off', description: 'Grab a FLEX bag at your gym reception. Fill it with your sweaty clothes and drop it off before 6pm.' },
-    { title: 'We Clean', description: 'We collect your bag and wash your clothes with activewear-safe products that protect performance fabrics.' },
-    { title: 'Pick Up Fresh', description: 'Your clean clothes are returned to your gym within 48 hours. Just ask at reception.' },
-  ]
-
-  const testimonials = [
-    { quote: 'Game changer. I work out 5 times a week and my laundry pile was out of control. Now I just drop and forget.', name: 'Sarah K.', since: 'Member since Oct 2024', initials: 'SK' },
-    { quote: 'The WhatsApp updates are brilliant. I know exactly when my stuff is ready without checking anything.', name: 'James M.', since: 'Member since Sep 2024', initials: 'JM' },
-    { quote: 'My gym clothes actually last longer now. They know how to treat technical fabrics properly.', name: 'Lisa P.', since: 'Member since Nov 2024', initials: 'LP' },
-  ]
-
-  const whatsappFeatures = [
-    'Confirmation when we receive your bag',
-    'Alert when your clothes are ready',
-    'Check your drops and manage subscription',
-    'Get help instantly via chat',
-  ]
-
   return (
     <>
-      {/* Hero Section */}
-      <section className="bg-warm-white section-padding">
-        <div className="container-width">
-          <div className="max-w-4xl mx-auto text-center slide-up">
-            <h1 className="heading-1 mb-6">
-              Gym Clothes Laundry
-              <span className="text-flex-navy"> Made Easy</span>
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Drop off sweaty gym clothes at your gym. Pick up fresh within 48 hours. No more laundry piling up at home.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/join" className="btn-primary text-center">Start Fresh Today</Link>
-              <Link href="/how-it-works" className="btn-secondary text-center">See How It Works</Link>
+      {/* Hero — Split layout: headline left, pricing right */}
+      <section className="min-h-[100svh] flex items-center pt-[60px] pb-8 md:pb-10">
+        <div className="container-page">
+          <div className="flex flex-col gap-5 md:grid md:grid-cols-[1.2fr_0.8fr] md:gap-12 md:items-center">
+            {/* Left — Headline */}
+            <div>
+              <h1 className="font-display font-extrabold text-[2.4rem] md:text-[clamp(3.2rem,5.5vw,5rem)] leading-[1.05] tracking-tight text-flex-black text-center md:text-left">
+                Drop sweaty.<br />Pick up fresh.
+              </h1>
+
+              <p className="text-flex-text text-base leading-relaxed mt-3.5 max-w-[420px] text-center md:text-left mx-auto md:mx-0">
+                Your gym gear, washed, folded, and returned to your gym within 48 hours. From just £3.50 a drop.
+              </p>
+
+              <div className="flex justify-center md:justify-start mt-4">
+                <Link href="/how-it-works" className="btn-primary">
+                  How it works &rarr;
+                </Link>
+              </div>
+
+              {/* Stats strip */}
+              <div className="grid grid-cols-3 gap-2 mt-6">
+                <div className="bg-flex-bg rounded-[20px] p-3 md:p-4 text-center">
+                  <div className="font-display text-xl md:text-2xl font-extrabold">48h</div>
+                  <div className="text-[0.55rem] text-flex-muted uppercase tracking-wider mt-0.5">Turnaround</div>
+                </div>
+                <div className="bg-flex-bg rounded-[20px] p-3 md:p-4 text-center">
+                  <div className="font-display text-xl md:text-2xl font-extrabold">£3.50</div>
+                  <div className="text-[0.55rem] text-flex-muted uppercase tracking-wider mt-0.5">Per Drop</div>
+                </div>
+                <div className="bg-flex-bg rounded-[20px] p-3 md:p-4 text-center">
+                  <div className="font-display text-xl md:text-2xl font-extrabold">100%</div>
+                  <div className="text-[0.55rem] text-flex-muted uppercase tracking-wider mt-0.5">Tracked</div>
+                </div>
+              </div>
             </div>
-            <div className="mt-8 flex items-center justify-center space-x-6 text-sm text-gray-500">
-              <div className="flex items-center space-x-2">
-                <svg className="w-5 h-5 text-flex-accent" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                <span>48hr turnaround</span>
+
+            {/* Right — Pricing cards (equal size) */}
+            <div className="grid grid-cols-2 gap-2.5">
+              {/* Pay As You Go */}
+              <div className="bg-flex-bg rounded-[20px] p-5 md:p-7 text-center flex flex-col">
+                <div className="text-[0.58rem] font-semibold tracking-wider uppercase text-flex-muted mb-2">Pay As You Go</div>
+                <div className="font-display text-2xl md:text-[2.6rem] font-black leading-none">£5</div>
+                <div className="font-display text-[0.7rem] font-semibold text-flex-muted">/drop</div>
+                <div className="text-[0.6rem] text-flex-muted mt-1">One-off</div>
+                <div className="mt-auto pt-3">
+                  <Link href="/join?plan=payg" className="btn-secondary text-[0.72rem] px-4 py-2 w-full">
+                    Try Once
+                  </Link>
+                </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <svg className="w-5 h-5 text-flex-accent" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                <span>From £5/drop</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <svg className="w-5 h-5 text-flex-accent" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                <span>Cancel anytime</span>
+
+              {/* Essential */}
+              <div className="bg-flex-black text-white rounded-[20px] p-5 md:p-7 text-center flex flex-col relative">
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-white text-flex-black text-[0.5rem] font-bold tracking-wider uppercase px-3 py-1 rounded-full shadow-md">
+                  Best value
+                </div>
+                <div className="text-[0.58rem] font-semibold tracking-wider uppercase text-gray-400 mb-2">Essential</div>
+                <div className="font-display text-2xl md:text-[2.6rem] font-black leading-none">£3.50</div>
+                <div className="font-display text-[0.7rem] font-semibold text-gray-400">/drop</div>
+                <div className="text-[0.6rem] text-gray-500 mt-1">£42/mo · 12 drops</div>
+                <div className="mt-auto pt-3">
+                  <Link href="/join?plan=essential" className="btn-white text-[0.72rem] px-4 py-2 w-full">
+                    Subscribe
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -70,141 +89,124 @@ export default function HomePage() {
       </section>
 
       {/* Problem Section */}
-      <section className="section-padding bg-white">
-        <div className="container-width">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="heading-2 mb-4">The Gym Laundry Problem</h2>
-            <p className="text-lg text-gray-600">You work out 3-5 times a week. That's a lot of sweaty clothes piling up.</p>
+      <section className="section-padding bg-flex-bg">
+        <div className="container-page">
+          <div className="mb-6 md:mb-10">
+            <span className="label-tag">The problem</span>
+            <h2 className="heading-2 mt-2">Your gym bag is a problem.</h2>
+            <p className="text-flex-text mt-2 max-w-lg">Most gym-goers waste 3-4 hours a week on sweaty laundry. There's a better way.</p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {problems.map((problem, index) => (
-              <div key={index} className="text-center p-6">
-                <div className={`w-16 h-16 ${index === 0 ? 'bg-red-100' : index === 1 ? 'bg-orange-100' : 'bg-yellow-100'} rounded-full flex items-center justify-center mx-auto mb-4`}>
-                  <svg className={`w-8 h-8 ${index === 0 ? 'text-red-500' : index === 1 ? 'text-orange-500' : 'text-yellow-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    {index === 0 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />}
-                    {index === 1 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />}
-                    {index === 2 && <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064" />}
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{problem.title}</h3>
-                <p className="text-gray-600">{problem.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* How It Works Section */}
-      <section className="section-padding bg-warm-gray">
-        <div className="container-width">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="heading-2 mb-4">How FLEX Works</h2>
-            <p className="text-lg text-gray-600">Three simple steps. That's all it takes.</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {steps.map((step, index) => (
-              <div key={index} className="bg-white rounded-2xl p-8 text-center relative">
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-8 h-8 bg-flex-navy text-white rounded-full flex items-center justify-center font-bold">{index + 1}</div>
-                <h3 className="text-lg font-semibold mb-3 mt-2">{step.title}</h3>
-                <p className="text-gray-600">{step.description}</p>
-              </div>
-            ))}
-          </div>
-          <div className="text-center mt-10">
-            <Link href="/how-it-works" className="text-flex-navy hover:text-gray-700 font-semibold inline-flex items-center">
-              Learn more about the process
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-            </Link>
+          <div className="grid md:grid-cols-3 gap-3 md:gap-5">
+            <div className="bg-white rounded-[20px] p-6 shadow-sm">
+              <h3 className="heading-3 mb-1">Time Drain</h3>
+              <p className="text-flex-text text-[0.82rem]">3-4 hours every week sorting, washing, drying, folding. That's 200 hours a year.</p>
+            </div>
+            <div className="bg-white rounded-[20px] p-6 shadow-sm">
+              <h3 className="heading-3 mb-1">Ruined Gear</h3>
+              <p className="text-flex-text text-[0.82rem]">Wrong temperatures and harsh detergents destroying your premium gym wear.</p>
+            </div>
+            <div className="bg-white rounded-[20px] p-6 shadow-sm">
+              <h3 className="heading-3 mb-1">Smelly Bag</h3>
+              <p className="text-flex-text text-[0.82rem]">Damp clothes festering between sessions. Your gym neighbours have noticed.</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Pricing Section - ✅ FIX: Only show 2 MVP plans */}
-      <section className="section-padding bg-white">
-        <div className="container-width">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="heading-2 mb-4">Simple Pricing</h2>
-            <p className="text-lg text-gray-600">Choose a plan that matches your workout routine.</p>
-          </div>
-          {/* ✅ FIX: Use grid-cols-2 for 2 plans */}
-          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-            {plans.map((plan) => (
-              <div 
-                key={plan.id} 
-                className={`card ${plan.isPopular ? 'relative border-2 border-flex-accent ring-2 ring-flex-accent ring-opacity-20' : 'border border-gray-200'}`}
-              >
-                {plan.isPopular && <div className="popular-badge">Recommended</div>}
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-bold text-flex-navy mb-2">{plan.name}</h3>
-                  <p className="text-gray-500 text-sm">{plan.description}</p>
-                </div>
-                <div className="text-center mb-3">
-                  <span className="text-4xl font-bold text-flex-navy">£{plan.pricePerDrop ?? plan.price}</span>
-                  <span className="text-gray-500 text-lg">/drop</span>
-                </div>
-                {plan.billingNote ? (
-                  <div className="flex justify-center mb-5">
-                    <span className="inline-flex flex-col items-center bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold px-4 py-2 rounded-full leading-relaxed">
-                      <span>{plan.billingNote}</span>
-                      {plan.addonNote && (
-                        <span className="font-normal text-emerald-600 mt-0.5">{plan.addonNote}</span>
-                      )}
-                    </span>
-                  </div>
-                ) : (
-                  <div className="mb-5" />
-                )}
-                <Link 
-                  href={`/join?plan=${plan.id}`} 
-                  className={`block text-center ${plan.isPopular ? 'btn-accent' : 'btn-primary'}`}
-                >
-                  Get Started
-                </Link>
-              </div>
-            ))}
-          </div>
-          <div className="text-center mt-10">
-            <Link href="/pricing" className="text-flex-navy hover:text-gray-700 font-semibold inline-flex items-center">
-              Compare all plan features
-              <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* WhatsApp Section */}
-      <section className="section-padding bg-flex-navy text-white">
-        <div className="container-width">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+      {/* WhatsApp Section — from mockup 8 with real chat flow */}
+      <section className="section-padding">
+        <div className="container-page">
+          <div className="flex flex-col gap-5 md:grid md:grid-cols-2 md:gap-12 md:items-start">
+            {/* Left — Features */}
             <div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Updates Via WhatsApp</h2>
-              <p className="text-lg text-gray-300 mb-6">No app to download. We message you at every step so you always know where your clothes are.</p>
-              <ul className="space-y-4">
-                {whatsappFeatures.map((feature, index) => (
-                  <li key={index} className="flex items-start space-x-3">
-                    <svg className="w-6 h-6 text-flex-accent flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
-                    <span>{feature}</span>
-                  </li>
-                ))}
+              <span className="label-tag">WhatsApp</span>
+              <h2 className="heading-2 mt-2">Your gym laundry,<br />right in your chat.</h2>
+              <p className="text-flex-text mt-3 max-w-[420px]">
+                No app to download. No login to remember. Drop, track, and get notified — all through WhatsApp.
+              </p>
+              <ul className="mt-6 space-y-0">
+                <li className="flex gap-3 items-start py-3 border-b border-flex-border">
+                  <span className="text-lg mt-0.5">📦</span>
+                  <div>
+                    <strong className="text-sm">Drop a bag</strong>
+                    <p className="text-flex-muted text-[0.82rem]">Text DROP and follow the prompts. Confirmed in seconds.</p>
+                  </div>
+                </li>
+                <li className="flex gap-3 items-start py-3 border-b border-flex-border">
+                  <span className="text-lg mt-0.5">🔔</span>
+                  <div>
+                    <strong className="text-sm">Know when it's ready</strong>
+                    <p className="text-flex-muted text-[0.82rem]">We ping you the moment clean clothes are back at the gym.</p>
+                  </div>
+                </li>
+                <li className="flex gap-3 items-start py-3 border-b border-flex-border">
+                  <span className="text-lg mt-0.5">📊</span>
+                  <div>
+                    <strong className="text-sm">Track your drops</strong>
+                    <p className="text-flex-muted text-[0.82rem]">Check remaining drops, view status, manage your subscription.</p>
+                  </div>
+                </li>
+                <li className="flex gap-3 items-start py-3">
+                  <span className="text-lg mt-0.5">💬</span>
+                  <div>
+                    <strong className="text-sm">Get help instantly</strong>
+                    <p className="text-flex-muted text-[0.82rem]">Describe an issue, get a ticket. Real humans reply fast.</p>
+                  </div>
+                </li>
               </ul>
             </div>
-            <div className="bg-white/10 rounded-3xl p-6">
-              <div className="bg-white rounded-2xl shadow-lg p-4 max-w-sm mx-auto">
-                <div className="flex items-center space-x-3 mb-4 pb-3 border-b">
-                  <div className="w-10 h-10 bg-flex-navy rounded-full flex items-center justify-center"><span className="text-white font-bold">F</span></div>
-                  <div><p className="font-semibold text-gray-900">FLEX</p><p className="text-xs text-gray-500">WhatsApp Business</p></div>
+
+            {/* Right — Animated WhatsApp phone mockup */}
+            <div className="bg-white rounded-[28px] overflow-hidden shadow-lg max-w-[380px] mx-auto md:mx-0 w-full">
+              <div className="bg-flex-black text-white px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center text-flex-black font-display font-extrabold text-sm">F</div>
+                <div>
+                  <div className="font-semibold text-[0.82rem]">FLEX Laundry</div>
+                  <div className="text-[0.6rem] text-gray-400">Online</div>
                 </div>
-                <div className="space-y-3">
-                  <div className="bg-green-100 rounded-lg p-3 max-w-[80%]">
-                    <p className="text-sm text-gray-800">Your clothes are ready! 🧺 Bag B001 is waiting at East London Fitness reception.</p>
-                    <p className="text-xs text-gray-500 mt-1">10:32 AM</p>
-                  </div>
-                  <div className="flex justify-end">
-                    <div className="bg-flex-light rounded-lg p-3 max-w-[60%]">
-                      <p className="text-sm text-gray-800">On my way!</p>
-                      <p className="text-xs text-gray-500 mt-1">10:33 AM ✓✓</p>
-                    </div>
-                  </div>
+              </div>
+              <div className="p-4 bg-[#EDEAE4] flex flex-col gap-1.5 min-h-[340px]">
+                {/* Messages with staggered animation delays via inline styles */}
+                <div className="wa-msg max-w-[88%] self-start bg-white rounded-[14px] rounded-bl-[3px] p-2.5 text-[0.78rem] leading-snug shadow-sm" style={{ opacity: 0, transform: 'translateY(6px)', animation: 'msgIn 0.3s 0.3s forwards' }}>
+                  Hey Sarah! 👋<br /><br />
+                  • <strong>1</strong> or <strong>DROP</strong> — Start a drop<br />
+                  • <strong>2</strong> or <strong>STATUS</strong> — Check status<br />
+                  • <strong>3</strong> or <strong>HELP</strong> — Support
+                  <div className="text-[0.5rem] text-flex-muted text-right mt-1">10:30</div>
+                </div>
+                <div className="max-w-[88%] self-end bg-flex-black text-white rounded-[14px] rounded-br-[3px] p-2.5 text-[0.78rem] leading-snug" style={{ opacity: 0, transform: 'translateY(6px)', animation: 'msgIn 0.3s 1.2s forwards' }}>
+                  1
+                  <div className="text-[0.5rem] text-gray-400 text-right mt-1">10:30 ✓✓</div>
+                </div>
+                <div className="max-w-[88%] self-start bg-white rounded-[14px] rounded-bl-[3px] p-2.5 text-[0.78rem] leading-snug shadow-sm" style={{ opacity: 0, transform: 'translateY(6px)', animation: 'msgIn 0.3s 2.2s forwards' }}>
+                  📦 Drop at <strong>Iron House Gym</strong><br /><br />
+                  <strong>8 drops</strong> remaining.<br /><br />
+                  Reply with your bag number
+                  <div className="text-[0.5rem] text-flex-muted text-right mt-1">10:30</div>
+                </div>
+                <div className="max-w-[88%] self-end bg-flex-black text-white rounded-[14px] rounded-br-[3px] p-2.5 text-[0.78rem] leading-snug" style={{ opacity: 0, transform: 'translateY(6px)', animation: 'msgIn 0.3s 3.2s forwards' }}>
+                  B042
+                  <div className="text-[0.5rem] text-gray-400 text-right mt-1">10:31 ✓✓</div>
+                </div>
+                <div className="max-w-[88%] self-start bg-white rounded-[14px] rounded-bl-[3px] p-2.5 text-[0.78rem] leading-snug shadow-sm" style={{ opacity: 0, transform: 'translateY(6px)', animation: 'msgIn 0.3s 4.2s forwards' }}>
+                  Got it! ✅<br /><br />
+                  📦 <strong>B042</strong><br />
+                  📍 <strong>Iron House Gym</strong><br />
+                  ⏰ Ready: <strong>Thu 4pm</strong><br />
+                  📊 Drops left: <strong>7</strong><br /><br />
+                  We'll text when ready!
+                  <div className="text-[0.5rem] text-flex-muted text-right mt-1">10:31</div>
+                </div>
+                <div className="max-w-[88%] self-end bg-flex-black text-white rounded-[14px] rounded-br-[3px] p-2.5 text-[0.78rem] leading-snug" style={{ opacity: 0, transform: 'translateY(6px)', animation: 'msgIn 0.3s 5.4s forwards' }}>
+                  💪
+                  <div className="text-[0.5rem] text-gray-400 text-right mt-1">10:32 ✓✓</div>
+                </div>
+                <div className="max-w-[88%] self-start bg-white rounded-[14px] rounded-bl-[3px] p-2.5 text-[0.78rem] leading-snug shadow-sm" style={{ opacity: 0, transform: 'translateY(6px)', animation: 'msgIn 0.3s 6.6s forwards' }}>
+                  Your clothes are ready! 👕✨<br /><br />
+                  Bag <strong>B042</strong> at <strong>Iron House Gym</strong>.<br />
+                  Available until <strong>next Thu</strong>.<br /><br />
+                  Enjoy! 💪
+                  <div className="text-[0.5rem] text-flex-muted text-right mt-1">Thu, 16:12</div>
                 </div>
               </div>
             </div>
@@ -212,40 +214,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Testimonials Section */}
-      <section className="section-padding bg-warm-gray">
-        <div className="container-width">
-          <div className="text-center max-w-3xl mx-auto mb-12">
-            <h2 className="heading-2 mb-4">What Members Say</h2>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div key={index} className="bg-white rounded-2xl p-6 shadow-sm">
-                <div className="flex items-center space-x-1 mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <svg key={i} className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                  ))}
-                </div>
-                <p className="text-gray-600 mb-4">"{testimonial.quote}"</p>
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-flex-light rounded-full flex items-center justify-center"><span className="font-semibold text-flex-navy">{testimonial.initials}</span></div>
-                  <div><p className="font-semibold text-sm">{testimonial.name}</p><p className="text-xs text-gray-500">{testimonial.since}</p></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="section-padding bg-flex-navy text-white">
-        <div className="container-width text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Ditch the Laundry Pile?</h2>
-          <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">Join FLEX today and never worry about gym laundry again. First drop could be tomorrow.</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/join" className="bg-white text-flex-navy px-8 py-4 rounded-lg font-semibold hover:bg-gray-100 transition-colors">Get Started — From £5/drop</Link>
-            <Link href="/pricing" className="border-2 border-white text-white px-8 py-4 rounded-lg font-semibold hover:bg-white/10 transition-colors">View Pricing</Link>
-          </div>
+      {/* Final CTA */}
+      <section className="bg-flex-black text-white text-center py-12 md:py-20 rounded-[28px] mx-3 mb-3">
+        <div className="container-page">
+          <h2 className="heading-2 text-white">Ready to ditch the laundry pile?</h2>
+          <p className="text-flex-muted mt-2 mb-6 text-[0.9rem]">£5 to try. £3.50/drop on Essential.</p>
+          <Link href="/join" className="btn-white">
+            Get Started &rarr;
+          </Link>
         </div>
       </section>
     </>

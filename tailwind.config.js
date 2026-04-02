@@ -7,17 +7,28 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // FLEX brand colors (original)
-        'flex-navy': '#1a1a1a',
-        'flex-blue': '#1a1a1a',
-        'flex-light': '#f0efe9',
-        'flex-accent': '#10b981',
-        'flex-bg': '#fafaf8',
-        'flex-border': '#e5e4df',
-        'flex-muted': '#6b6b6b',
+        'flex-black': '#111111',
+        'flex-white': '#FEFEFE',
+        'flex-bg': '#F3F3F0',
+        'flex-card': '#FFFFFF',
+        'flex-border': '#DDDDD8',
+        'flex-muted': '#888888',
+        'flex-text': '#555555',
+        // Legacy aliases for portal/ops (keep working)
+        'flex-navy': '#111111',
+        'flex-blue': '#111111',
+        'flex-light': '#F3F3F0',
+        'flex-accent': '#111111',
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Unbounded', 'sans-serif'],
+        body: ['DM Sans', 'sans-serif'],
+        sans: ['DM Sans', 'sans-serif'],
+      },
+      borderRadius: {
+        'card': '20px',
+        'card-lg': '28px',
+        'pill': '100px',
       },
     },
   },

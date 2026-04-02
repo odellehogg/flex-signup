@@ -1,206 +1,121 @@
 import Link from 'next/link';
-import { getPublicPlans } from '@/lib/plans';
 
 export const metadata = {
-  title: 'Pricing - FLEX Gym Laundry Service',
-  description: 'Simple, transparent pricing for gym clothes laundry. From £5 per drop. No hidden fees, cancel anytime.',
+  title: 'Pricing — FLEX Gym Laundry',
+  description: 'Simple, transparent pricing. From £3.50 per drop. No hidden fees, cancel anytime.',
+  openGraph: {
+    title: 'Pricing — FLEX Gym Laundry',
+    description: 'From £3.50 per drop. No hidden fees.',
+    url: 'https://www.flexlaundry.co.uk/pricing',
+  },
 };
 
 export default function PricingPage() {
-  // ✅ FIX: Use getPublicPlans() to only show MVP plans (Essential + One-Off)
-  const plans = getPublicPlans();
-  
   return (
     <>
-      {/* Hero */}
-      <section className="bg-gradient-to-br from-emerald-50 to-white py-16 md:py-24">
+      <section className="section-padding pt-24 md:pt-32 bg-flex-bg">
         <div className="container-page text-center">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-            Simple, Transparent Pricing
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            Choose the plan that fits your workout routine. No hidden fees, cancel anytime.
-          </p>
+          <span className="label-tag">Pricing</span>
+          <h1 className="heading-1 mt-3">Simple, transparent pricing.</h1>
+          <p className="text-flex-text mt-3 text-lg">No hidden fees. No sign-up costs. Cancel anytime.</p>
         </div>
       </section>
 
-      {/* Pricing Cards */}
-      <section className="section bg-white -mt-8">
+      <section className="section-padding">
         <div className="container-page">
-          {/* ✅ FIX: Use grid-cols-2 for 2 plans, centered */}
-          <div className="grid md:grid-cols-2 gap-8 max-w-3xl mx-auto">
-            {plans.map((plan) => (
-              <div 
-                key={plan.id}
-                className={`card relative ${plan.isPopular ? 'border-2 border-emerald-500 shadow-xl' : ''}`}
-              >
-                {plan.isPopular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="bg-emerald-500 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                      RECOMMENDED
-                    </span>
-                  </div>
-                )}
-                
-                <div className="text-center mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">{plan.name}</h2>
-                  <div className="text-4xl font-bold text-emerald-600">
-                    £{plan.pricePerDrop ?? plan.price}
-                    <span className="text-lg font-normal text-gray-500">/drop</span>
-                  </div>
-                  {plan.billingNote ? (
-                    <div className="flex justify-center mt-3">
-                      <span className="inline-flex flex-col items-center bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold px-4 py-2 rounded-full leading-relaxed">
-                        <span>{plan.billingNote}</span>
-                        {plan.addonNote && (
-                          <span className="font-normal text-emerald-600 mt-0.5">{plan.addonNote}</span>
-                        )}
-                      </span>
-                    </div>
-                  ) : (
-                    <p className="text-gray-600 mt-2">{plan.description}</p>
-                  )}
-                </div>
-                
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, idx) => (
-                    <li key={idx} className="flex items-start">
-                      <svg className="w-5 h-5 text-emerald-500 mr-2 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                      </svg>
-                      <span className="text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-                
-                <Link 
-                  href={`/join?plan=${plan.id}`}
-                  className={`block text-center py-3 px-6 rounded-lg font-semibold transition-colors duration-200 ${
-                    plan.isPopular 
-                      ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-900'
-                  }`}
-                >
-                  {plan.isSubscription ? 'Subscribe Now' : 'Try Once'}
-                </Link>
-              </div>
-            ))}
+          <div className="grid md:grid-cols-2 gap-4 md:gap-5 max-w-[800px] mx-auto">
+            {/* PAYG */}
+            <div className="bg-white rounded-[28px] p-7 md:p-10 relative shadow-sm">
+              <div className="text-[0.6rem] font-semibold tracking-wider uppercase text-flex-muted mb-3">Pay As You Go</div>
+              <div className="font-display text-[2.6rem] md:text-[3.2rem] font-black leading-none">£5 <span className="font-display text-sm font-semibold opacity-70">/drop</span></div>
+              <div className="text-[0.72rem] text-flex-muted mt-1.5 mb-5">One-off · no commitment</div>
+              <ul className="space-y-1.5 mb-6">
+                <li className="text-[0.82rem] text-flex-text flex items-center gap-1.5">✓ 1 bag of gym clothes</li>
+                <li className="text-[0.82rem] text-flex-text flex items-center gap-1.5">✓ 48-hour turnaround</li>
+                <li className="text-[0.82rem] text-flex-text flex items-center gap-1.5">✓ WhatsApp tracking</li>
+                <li className="text-[0.82rem] text-flex-text flex items-center gap-1.5">✓ No commitment at all</li>
+              </ul>
+              <Link href="/join?plan=payg" className="btn-secondary w-full">Try Once &rarr;</Link>
+            </div>
+
+            {/* Essential */}
+            <div className="bg-flex-black text-white rounded-[28px] p-7 md:p-10 relative">
+              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-white text-flex-black text-[0.55rem] font-bold tracking-wider uppercase px-4 py-1 rounded-full shadow-md">Recommended</div>
+              <div className="text-[0.6rem] font-semibold tracking-wider uppercase text-gray-400 mb-3">Essential</div>
+              <div className="font-display text-[2.6rem] md:text-[3.2rem] font-black leading-none">£3.50 <span className="font-display text-sm font-semibold opacity-70">/drop</span></div>
+              <div className="text-[0.72rem] text-gray-500 mt-1.5">Up to 12 drops per month</div>
+              <div className="text-[0.62rem] text-gray-500 bg-white/10 rounded-full px-3 py-1 inline-block mt-2 mb-5">Billed at £42/month · Top up £4/drop</div>
+              <ul className="space-y-1.5 mb-6">
+                <li className="text-[0.82rem] text-gray-300 flex items-center gap-1.5">✓ Up to 12 drops per month</li>
+                <li className="text-[0.82rem] text-gray-300 flex items-center gap-1.5">✓ 48-hour turnaround</li>
+                <li className="text-[0.82rem] text-gray-300 flex items-center gap-1.5">✓ WhatsApp tracking</li>
+                <li className="text-[0.82rem] text-gray-300 flex items-center gap-1.5">✓ Top up anytime for £4/drop</li>
+                <li className="text-[0.82rem] text-gray-300 flex items-center gap-1.5">✓ Cancel anytime</li>
+              </ul>
+              <Link href="/join?plan=essential" className="btn-white w-full">Subscribe &rarr;</Link>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Comparison - Updated for 2 plans */}
-      <section className="section bg-gray-50">
+      {/* Comparison */}
+      <section className="section-padding bg-flex-bg">
         <div className="container-page">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            Compare Plans
-          </h2>
-          
+          <div className="text-center mb-6">
+            <span className="label-tag">Compare</span>
+            <h2 className="heading-2 mt-2">Side by side.</h2>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full max-w-3xl mx-auto">
+            <table className="w-full max-w-[800px] mx-auto bg-white rounded-[20px] overflow-hidden shadow-sm text-[0.82rem]">
               <thead>
-                <tr className="border-b-2 border-gray-200">
-                  <th className="text-left py-4 px-4">Feature</th>
-                  <th className="text-center py-4 px-4">One-Off</th>
-                  <th className="text-center py-4 px-4 bg-emerald-50">Essential</th>
+                <tr>
+                  <th className="text-left p-3 md:p-4 text-[0.6rem] font-semibold tracking-wider uppercase text-flex-muted bg-flex-bg">Feature</th>
+                  <th className="text-left p-3 md:p-4 text-[0.6rem] font-semibold tracking-wider uppercase text-flex-muted bg-flex-bg">Pay As You Go</th>
+                  <th className="text-left p-3 md:p-4 text-[0.6rem] font-semibold tracking-wider uppercase text-flex-muted bg-flex-bg">Essential</th>
                 </tr>
               </thead>
-              <tbody className="text-gray-600">
-                <tr className="border-b border-gray-100">
-                  <td className="py-4 px-4 font-medium">Price</td>
-                  <td className="text-center py-4 px-4">£5 (one-time)</td>
-                  <td className="text-center py-4 px-4 bg-emerald-50">£42/month</td>
-                </tr>
-                <tr className="border-b border-gray-100">
-                  <td className="py-4 px-4 font-medium">Drops included</td>
-                  <td className="text-center py-4 px-4">1</td>
-                  <td className="text-center py-4 px-4 bg-emerald-50">Up to 12</td>
-                </tr>
-                <tr className="border-b border-gray-100">
-                  <td className="py-4 px-4 font-medium">Price per drop</td>
-                  <td className="text-center py-4 px-4">£5.00</td>
-                  <td className="text-center py-4 px-4 bg-emerald-50">£3.50</td>
-                </tr>
-                <tr className="border-b border-gray-100">
-                  <td className="py-4 px-4 font-medium">Extra drops</td>
-                  <td className="text-center py-4 px-4">—</td>
-                  <td className="text-center py-4 px-4 bg-emerald-50">Top up £4/drop</td>
-                </tr>
-                <tr className="border-b border-gray-100">
-                  <td className="py-4 px-4 font-medium">48-hour turnaround</td>
-                  <td className="text-center py-4 px-4">✓</td>
-                  <td className="text-center py-4 px-4 bg-emerald-50">✓</td>
-                </tr>
-                <tr className="border-b border-gray-100">
-                  <td className="py-4 px-4 font-medium">WhatsApp tracking</td>
-                  <td className="text-center py-4 px-4">✓</td>
-                  <td className="text-center py-4 px-4 bg-emerald-50">✓</td>
-                </tr>
-                <tr>
-                  <td className="py-4 px-4 font-medium">Commitment</td>
-                  <td className="text-center py-4 px-4">None</td>
-                  <td className="text-center py-4 px-4 bg-emerald-50">Cancel anytime</td>
-                </tr>
+              <tbody className="text-flex-text">
+                <tr className="border-b border-flex-border"><td className="p-3 md:p-4 font-medium">Per drop price</td><td className="p-3 md:p-4">£5.00</td><td className="p-3 md:p-4 font-bold">£3.50</td></tr>
+                <tr className="border-b border-flex-border"><td className="p-3 md:p-4 font-medium">Monthly cost</td><td className="p-3 md:p-4">Pay per use</td><td className="p-3 md:p-4">£42/month</td></tr>
+                <tr className="border-b border-flex-border"><td className="p-3 md:p-4 font-medium">Drops included</td><td className="p-3 md:p-4">1</td><td className="p-3 md:p-4">Up to 12</td></tr>
+                <tr className="border-b border-flex-border"><td className="p-3 md:p-4 font-medium">Extra drops</td><td className="p-3 md:p-4">N/A</td><td className="p-3 md:p-4">£4 each</td></tr>
+                <tr className="border-b border-flex-border"><td className="p-3 md:p-4 font-medium">Turnaround</td><td className="p-3 md:p-4">48 hours</td><td className="p-3 md:p-4">48 hours</td></tr>
+                <tr className="border-b border-flex-border"><td className="p-3 md:p-4 font-medium">WhatsApp tracking</td><td className="p-3 md:p-4">✓</td><td className="p-3 md:p-4">✓</td></tr>
+                <tr><td className="p-3 md:p-4 font-medium">Commitment</td><td className="p-3 md:p-4">None</td><td className="p-3 md:p-4">Cancel anytime</td></tr>
               </tbody>
             </table>
           </div>
         </div>
       </section>
 
-      {/* FAQ Preview */}
-      <section className="section bg-white">
-        <div className="container-page max-w-3xl">
-          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
-            Common Questions
-          </h2>
-          
-          <div className="space-y-6">
-            <div className="border-b border-gray-200 pb-6">
-              <h3 className="font-semibold text-lg text-gray-900 mb-2">
-                What can I include in a drop?
-              </h3>
-              <p className="text-gray-600">
-                Gym tops, shorts, leggings, sports bras, towels, and socks. Basically anything you'd wear to the gym except shoes. Each bag can hold about one full outfit plus a towel.
-              </p>
-            </div>
-            <div className="border-b border-gray-200 pb-6">
-              <h3 className="font-semibold text-lg text-gray-900 mb-2">
-                What if I don't use all my drops?
-              </h3>
-              <p className="text-gray-600">
-                Unused drops don't roll over to the next month. We recommend choosing a plan that matches your typical workout frequency. Start with One-Off to try it out!
-              </p>
-            </div>
-            <div className="border-b border-gray-200 pb-6">
-              <h3 className="font-semibold text-lg text-gray-900 mb-2">
-                Can I change or cancel my plan?
-              </h3>
-              <p className="text-gray-600">
-                Yes! You can upgrade or cancel your subscription anytime from your member portal. Changes take effect at your next billing date.
-              </p>
-            </div>
+      {/* Pricing FAQ */}
+      <section className="section-padding">
+        <div className="container-narrow">
+          <div className="text-center mb-6">
+            <span className="label-tag">Questions</span>
+            <h2 className="heading-2 mt-2">About pricing.</h2>
           </div>
-          
-          <div className="text-center mt-8">
-            <Link href="/faq" className="btn-outline">
-              View All FAQs
-            </Link>
-          </div>
+          {[
+            { q: 'What gym clothes can I include?', a: 'T-shirts, shorts, leggings, sports bras, socks, underwear, hoodies, and joggers. Basically anything you\'d wear to train in.' },
+            { q: 'What happens to unused drops?', a: 'Unused drops reset at the start of each billing cycle. They don\'t roll over, so make the most of them.' },
+            { q: 'Can I change or cancel my plan?', a: 'Yes. Pause, cancel, or change anytime from the member portal or via WhatsApp. No penalties, no questions.' },
+          ].map((faq, i) => (
+            <details key={i} className="bg-white rounded-2xl mb-2 shadow-sm group">
+              <summary className="px-5 py-4 font-semibold text-[0.88rem] cursor-pointer flex justify-between items-center list-none">
+                {faq.q}
+                <span className="text-flex-muted group-open:rotate-45 transition-transform">+</span>
+              </summary>
+              <p className="px-5 pb-4 text-flex-text text-[0.82rem]">{faq.a}</p>
+            </details>
+          ))}
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="section bg-emerald-600">
-        <div className="container-page text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
-            Ready to Get Started?
-          </h2>
-          <p className="text-xl text-emerald-100 mb-8">
-            Try with a One-Off drop for just £5, no commitment required.
-          </p>
-          <Link href="/join" className="bg-white text-emerald-600 hover:bg-emerald-50 font-semibold py-3 px-8 rounded-lg text-lg transition-colors duration-200">
-            Start Now
-          </Link>
+      <section className="bg-flex-black text-white text-center py-12 md:py-20 rounded-[28px] mx-3 mb-3">
+        <div className="container-page">
+          <h2 className="heading-2 text-white">Start with one drop.</h2>
+          <p className="text-flex-muted mt-2 mb-6">See if FLEX is right for you. No commitment.</p>
+          <Link href="/join" className="btn-white">Try for £5 &rarr;</Link>
         </div>
       </section>
     </>
