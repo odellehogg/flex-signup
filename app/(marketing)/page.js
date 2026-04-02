@@ -39,15 +39,15 @@ export default function HomePage() {
               {/* Stats strip */}
               <div className="grid grid-cols-3 gap-2 mt-6">
                 <div className="bg-flex-bg rounded-[20px] p-3 md:p-4 text-center">
-                  <div className="font-display text-xl md:text-2xl font-extrabold">48h</div>
+                  <div className="font-display text-[1.2rem] md:text-[1.5rem] font-extrabold">48h</div>
                   <div className="text-[0.55rem] text-flex-muted uppercase tracking-wider mt-0.5">Turnaround</div>
                 </div>
                 <div className="bg-flex-bg rounded-[20px] p-3 md:p-4 text-center">
-                  <div className="font-display text-xl md:text-2xl font-extrabold">£3.50</div>
+                  <div className="font-display text-[1.2rem] md:text-[1.5rem] font-extrabold">£3.50</div>
                   <div className="text-[0.55rem] text-flex-muted uppercase tracking-wider mt-0.5">Per Drop</div>
                 </div>
                 <div className="bg-flex-bg rounded-[20px] p-3 md:p-4 text-center">
-                  <div className="font-display text-xl md:text-2xl font-extrabold">100%</div>
+                  <div className="font-display text-[1.2rem] md:text-[1.5rem] font-extrabold">100%</div>
                   <div className="text-[0.55rem] text-flex-muted uppercase tracking-wider mt-0.5">Tracked</div>
                 </div>
               </div>

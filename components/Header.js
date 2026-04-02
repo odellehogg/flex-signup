@@ -20,7 +20,7 @@ export default function Header() {
         <nav className="px-4 md:px-5">
           <div className="flex items-center justify-between h-[50px]">
             {/* Logo */}
-            <Link href="/" style={{ fontFamily: "'Unbounded', sans-serif" }} className="text-xl font-extrabold text-flex-black">
+            <Link href="/" style={{ fontFamily: "'Unbounded', sans-serif", fontSize: '1.4rem' }} className="font-extrabold text-flex-black">
               FLEX
             </Link>
 
@@ -30,7 +30,7 @@ export default function Header() {
                 <Link
                   key={item.name}
                   href={item.href}
-                  className="text-[0.75rem] font-medium text-flex-muted hover:text-flex-black hover:bg-flex-bg px-2.5 py-1.5 rounded-full transition-all"
+                  className="text-[0.8rem] font-medium text-flex-muted hover:text-flex-black hover:bg-flex-bg px-2.5 py-1.5 rounded-full transition-all"
                 >
                   {item.name}
                 </Link>
@@ -41,7 +41,7 @@ export default function Header() {
             <div className="hidden md:flex items-center gap-1.5">
               <Link
                 href="/portal"
-                className="text-[0.75rem] font-medium text-flex-muted hover:text-flex-black px-2.5 py-1.5 rounded-full transition-colors"
+                className="text-[0.8rem] font-medium text-flex-muted hover:text-flex-black px-2.5 py-1.5 rounded-full transition-colors"
               >
                 Login
               </Link>

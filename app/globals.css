@@ -21,18 +21,43 @@ html {
 
 body {
   font-family: 'DM Sans', system-ui, sans-serif !important;
+  font-size: 15px;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Ensure display font on all headings */
+/* Display font on all headings — exact mockup sizes */
 h1, h2, h3, h4, .font-display, .heading-1, .heading-2, .heading-3 {
   font-family: 'Unbounded', sans-serif !important;
 }
 
+h1 {
+  font-size: 1.8rem;
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+h2 {
+  font-size: 1.5rem;
+  line-height: 1.12;
+  font-weight: 700;
+}
+h3 {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+@media (min-width: 769px) {
+  h1 { font-size: clamp(2.2rem, 4vw, 3.5rem); }
+  h2 { font-size: clamp(1.8rem, 3vw, 2.6rem); }
+  h3 { font-size: 1.2rem; }
+}
+
 @layer components {
-  /* Buttons */
+  /* Buttons — mockup sizes: 0.85rem font, 14px 28px padding */
   .btn-primary {
-    @apply bg-flex-black text-white px-6 py-3 font-semibold hover:bg-gray-800 transition-all duration-300 inline-flex items-center justify-center gap-2;
+    @apply bg-flex-black text-white font-semibold hover:bg-gray-800 transition-all duration-300 inline-flex items-center justify-center gap-2;
+    font-size: 0.85rem;
+    padding: 14px 28px;
     border-radius: var(--pill);
   }
   .btn-primary:hover {
@@ -41,7 +66,9 @@ h1, h2, h3, h4, .font-display, .heading-1, .heading-2, .heading-3 {
   }
 
   .btn-secondary {
-    @apply bg-transparent text-flex-black px-6 py-3 font-semibold border-2 border-flex-black hover:bg-flex-black hover:text-white transition-all duration-300 inline-flex items-center justify-center gap-2;
+    @apply bg-transparent text-flex-black font-semibold border-2 border-flex-black hover:bg-flex-black hover:text-white transition-all duration-300 inline-flex items-center justify-center gap-2;
+    font-size: 0.85rem;
+    padding: 14px 28px;
     border-radius: var(--pill);
   }
   .btn-secondary:hover {
@@ -49,17 +76,23 @@ h1, h2, h3, h4, .font-display, .heading-1, .heading-2, .heading-3 {
   }
 
   .btn-accent {
-    @apply bg-flex-black text-white px-6 py-3 font-semibold hover:bg-gray-800 transition-all duration-300 inline-flex items-center justify-center gap-2;
+    @apply bg-flex-black text-white font-semibold hover:bg-gray-800 transition-all duration-300 inline-flex items-center justify-center gap-2;
+    font-size: 0.85rem;
+    padding: 14px 28px;
     border-radius: var(--pill);
   }
 
   .btn-outline {
-    @apply bg-transparent text-gray-700 px-6 py-3 font-semibold border border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 inline-flex items-center justify-center gap-2;
+    @apply bg-transparent text-gray-700 font-semibold border border-gray-300 hover:bg-gray-50 hover:border-gray-400 transition-all duration-300 inline-flex items-center justify-center gap-2;
+    font-size: 0.85rem;
+    padding: 14px 28px;
     border-radius: var(--pill);
   }
 
   .btn-white {
-    @apply bg-white text-flex-black px-6 py-3 font-semibold transition-all duration-300 inline-flex items-center justify-center gap-2;
+    @apply bg-white text-flex-black font-semibold transition-all duration-300 inline-flex items-center justify-center gap-2;
+    font-size: 0.85rem;
+    padding: 14px 28px;
     border: 2px solid white;
     border-radius: var(--pill);
   }
@@ -110,24 +143,36 @@ h1, h2, h3, h4, .font-display, .heading-1, .heading-2, .heading-3 {
     @apply max-w-[760px] mx-auto px-5 md:px-10;
   }
 
-  /* Typography */
+  /* Typography — exact mockup values */
   .heading-1 {
-    @apply text-3xl md:text-5xl font-bold text-flex-black;
+    @apply font-bold text-flex-black;
     font-family: 'Unbounded', sans-serif;
-    letter-spacing: -0.02em;
+    font-size: 1.8rem;
     line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+  @media (min-width: 769px) {
+    .heading-1 { font-size: clamp(2.2rem, 4.5vw, 4rem); }
   }
 
   .heading-2 {
-    @apply text-2xl md:text-4xl font-bold text-flex-black;
+    @apply font-bold text-flex-black;
     font-family: 'Unbounded', sans-serif;
-    letter-spacing: -0.01em;
+    font-size: 1.5rem;
     line-height: 1.12;
+    letter-spacing: -0.01em;
+  }
+  @media (min-width: 769px) {
+    .heading-2 { font-size: clamp(1.8rem, 3vw, 2.8rem); }
   }
 
   .heading-3 {
-    @apply text-lg md:text-xl font-semibold text-flex-black;
+    @apply font-semibold text-flex-black;
     font-family: 'Unbounded', sans-serif;
+    font-size: 1.05rem;
+  }
+  @media (min-width: 769px) {
+    .heading-3 { font-size: 1.3rem; }
   }
 
   .text-muted {
@@ -135,7 +180,11 @@ h1, h2, h3, h4, .font-display, .heading-1, .heading-2, .heading-3 {
   }
 
   .label-tag {
-    @apply text-xs font-semibold tracking-widest uppercase text-flex-muted;
+    font-size: 0.62rem;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--flex-muted);
   }
 
   /* Input */
